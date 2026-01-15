@@ -1882,3 +1882,31 @@ form:not(.hidden),
   margin-top: 3px;
   opacity: 0.8;
 }
+
+/* =====================
+   MOBILE NAVBAR FIXES
+===================== */
+@media (max-width: 600px) {
+  .navbar {
+    padding: 10px 14px;
+  }
+  .navbar .logo img {
+    height: 36px;
+  }
+  .navbar nav a {
+    margin-left: 10px;
+  }
+  .hamburger-btn {
+    margin-right: 8px;
+    padding: 5px;
+  }
+  /* Compact Home Button: Hide text, keep icon */
+  .navbar nav a[onclick*="home"] {
+    font-size: 0 !important;
+    gap: 0 !important;
+  }
+  .navbar nav a[onclick*="home"] svg {
+    width: 26px;
+    height: 26px;
+  }
+}

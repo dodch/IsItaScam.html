@@ -311,7 +311,75 @@ async function initCountryFilter() {
     const sortSelect = document.getElementById('sort-filter');
     if (!sortSelect || document.getElementById('country-filter')) return;
 
-    const container = sortSelect.parentNode;
+    const parent = sortSelect.parentNode;
+    
+    // Wrapper for positioning arrow relative to filters, not the whole header
+    const wrapper = document.createElement('div');
+    wrapper.style.position = 'relative';
+    wrapper.style.flex = '1';
+    wrapper.style.minWidth = '0'; // Flexbox overflow fix
+    
+    // Create wrapper for scrollable filters
+    const container = document.createElement('div');
+    container.classList.add('filter-scroll-container');
+    Object.assign(container.style, {
+        display: 'flex',
+        alignItems: 'center',
+        overflowX: 'auto',
+        whiteSpace: 'nowrap',
+        maxWidth: '100%',
+        paddingBottom: '5px',
+        scrollbarWidth: 'none'
+    });
+
+    // Move sortSelect into wrapper
+    parent.insertBefore(wrapper, sortSelect);
+    wrapper.appendChild(container);
+    container.appendChild(sortSelect);
+
+    // Add Scroll Indicator Arrow
+    const arrow = document.createElement('div');
+    arrow.innerHTML = `<svg viewBox="0 0 24 24" style="width:24px; height:24px; fill:#8b5cf6; filter: drop-shadow(0 0 2px rgba(0,0,0,0.8));"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>`;
+    Object.assign(arrow.style, {
+        position: 'absolute',
+        right: '0',
+        top: '50%',
+        transform: 'translateY(-50%)',
+        zIndex: '10',
+        cursor: 'pointer',
+        display: 'none',
+        animation: 'pulseArrow 1.5s infinite'
+    });
+    
+    arrow.onclick = (e) => {
+        e.stopPropagation();
+        container.scrollBy({ left: 150, behavior: 'smooth' });
+    };
+    
+    // Inject animation
+    if (!document.getElementById('arrow-anim-style')) {
+        const s = document.createElement('style');
+        s.id = 'arrow-anim-style';
+        s.textContent = `@keyframes pulseArrow { 0% { opacity: 0.6; transform: translateY(-50%) translateX(0); } 50% { opacity: 1; transform: translateY(-50%) translateX(3px); } 100% { opacity: 0.6; transform: translateY(-50%) translateX(0); } }`;
+        document.head.appendChild(s);
+    }
+    wrapper.appendChild(arrow);
+
+    const updateArrow = () => {
+        if (container.scrollWidth > container.clientWidth && (container.scrollWidth - container.scrollLeft - container.clientWidth) > 5) {
+            arrow.style.display = 'block';
+            container.style.maskImage = 'linear-gradient(to right, black 85%, transparent 100%)';
+            container.style.webkitMaskImage = 'linear-gradient(to right, black 85%, transparent 100%)';
+        } else {
+            arrow.style.display = 'none';
+            container.style.maskImage = 'none';
+            container.style.webkitMaskImage = 'none';
+        }
+    };
+    container.addEventListener('scroll', updateArrow);
+    window.addEventListener('resize', updateArrow);
+    setTimeout(updateArrow, 500);
+
     const select = document.createElement('select');
     select.id = 'country-filter';
     
@@ -484,6 +552,23 @@ function injectGlobalStyles() {
       transform: translateY(-2px);
       border-color: #8b5cf6 !important;
       box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+    }
+    
+    /* Mobile Optimizations */
+    @media (max-width: 600px) {
+        .details-header-title { font-size: 1.25rem !important; }
+        .details-header-title { 
+            font-size: 1.25rem !important;
+            flex-direction: column;
+            gap: 5px !important;
+        }
+        .details-header-buttons { flex-wrap: wrap; }
+        .details-header-buttons button { 
+            flex: 1; 
+            min-width: 100px; 
+            font-size: 0.85rem !important;
+        }
+        .filter-scroll-container::-webkit-scrollbar { display: none; }
     }
   `;
   document.head.appendChild(style);
@@ -2782,14 +2867,15 @@ async function populateDetailsView(url, type, highlightId = null) {
 
     container.innerHTML += `
       <div style="text-align:center; margin-bottom:24px;">
-        <a href="${displayUrl}" ${isPhone ? '' : `onclick="interceptLink(event, this.href, '${statusText}')"`} style="display:inline-flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:12px; text-decoration:none; color:${isVerified ? '#ffd700' : '#eaeaea'}; font-size:1.6rem; font-weight:bold; transition: opacity 0.2s; max-width: 100%;">
+      <div style="text-align:center; padding:15px 0; margin-bottom:20px; position:sticky; top:0; background:#161b22; z-index:100; border-bottom:1px solid #30363d;">
+        <a href="${displayUrl}" ${isPhone ? '' : `onclick="interceptLink(event, this.href, '${statusText}')"`} class="details-header-title" style="display:inline-flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:12px; text-decoration:none; color:${isVerified ? '#ffd700' : '#eaeaea'}; font-size:1.6rem; font-weight:bold; transition: opacity 0.2s; max-width: 100%;">
           <div class="platform-icon" style="background:${platform.color}; width:48px; height:48px; font-size:24px; display:flex; align-items:center; justify-content:center;">${platform.icon}</div>
           <span style="word-break: break-word; text-align: center;">${displayTitle}</span>
           ${verifiedBadge}
           <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:#38bdf8; opacity:0.8;"><path d="M18 13v6c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V8c0-1.1.9-2 2-2h6v2H5v11h11v-6h2zm-1.5-9H11v2h3.59l-4.83 4.83 1.41 1.41L16 7.41V11h2V4z"/></svg>
         </a>
         <div style="font-size:0.9rem; color:#8b949e; margin-top:8px;">${platform.name}</div>
-        <div style="margin-top:16px; display:flex; gap:10px; justify-content:center;">
+        <div class="details-header-buttons" style="margin-top:16px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
              <button onclick="rateLinkFromModal(decodeURIComponent(&quot;${encodeURIComponent(url)}&quot;))" style="background:rgba(255, 170, 0, 0.1); border:1px solid rgba(255, 170, 0, 0.3); color:#ffaa00; padding:8px 20px; border-radius:50px; font-size:0.9rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:8px; transition:all 0.2s;">
                 <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor; transform:translateY(-1px);"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
                 Rate User
@@ -5777,6 +5863,7 @@ window.addEventListener('scroll', () => {
   closeMenu();
 
   const searchBox = document.querySelector('.search-box');
+  const navbar = document.querySelector('.navbar');
   const homeSection = document.getElementById('home');
   const fab = document.querySelector('.floating-pill-btn');
   const reportSection = document.getElementById('report');
@@ -5785,9 +5872,14 @@ window.addEventListener('scroll', () => {
   if (searchBox && homeSection && !homeSection.classList.contains('hidden')) {
     if (window.scrollY > 150) {
       searchBox.classList.add('sticky-search');
+      if (navbar) navbar.classList.add('hidden');
     } else {
       searchBox.classList.remove('sticky-search');
+      if (navbar) navbar.classList.remove('hidden');
     }
+  } else {
+    if (navbar) navbar.classList.remove('hidden');
+    if (searchBox) searchBox.classList.remove('sticky-search');
   }
 
   // FAB Scroll Logic (Zoom out when scrolling down, Zoom in at top)
