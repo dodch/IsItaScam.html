@@ -1,0 +1,4923 @@
+/* ==========================================
+   FIREBASE CONFIGURATION
+   ========================================== */
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, deleteDoc, doc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyAKWeJs1dbtuVAV6S5smtHqlHiU8SiY7V8",
+  authDomain: "isitascam-c4a5c.firebaseapp.com",
+  projectId: "isitascam-c4a5c",
+  storageBucket: "isitascam-c4a5c.appspot.com",
+  messagingSenderId: "808456257466",
+  appId: "1:808456257466:web:25dff8b7748f1503802783",
+  measurementId: "G-P90Z7KYW70"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const analytics = getAnalytics(app);
+
+// ADMIN CONFIGURATION
+const ADMIN_UID = "RDfLIxyEC1SZxNA7GphhTNGWi7A2";
+
+/* PAGE NAVIGATION */
+function showPage(page, defaultTab = 'profile', activitySubTab = 'reports') {
+  if (page === 'report' && !auth.currentUser) {
+    showToast("You must be logged in to report a scam.", "error");
+    showPage('login');
+    return;
+  }
+
+  // Ensure the page starts at the top when navigating
+  if (!window.skipScrollReset) {
+    window.scrollTo(0, 0);
+  }
+  window.skipScrollReset = false; // Reset flag
+
+  document.getElementById('home').classList.add('hidden');
+  document.getElementById('profile').classList.add('hidden');
+  document.getElementById('report').classList.add('hidden');
+  document.getElementById('login').classList.add('hidden');
+  document.getElementById('details-view').classList.add('hidden');
+  if(document.getElementById('admin-dashboard')) document.getElementById('admin-dashboard').classList.add('hidden');
+  if(document.getElementById('privacy')) document.getElementById('privacy').classList.add('hidden');
+  if(document.getElementById('terms')) document.getElementById('terms').classList.add('hidden');
+
+  document.getElementById(page).classList.remove('hidden');
+
+  // Show FAB only on home page
+  const fab = document.querySelector('.floating-pill-btn');
+  if (fab) {
+    if (page === 'home') {
+      fab.classList.remove('hidden-fab');
+    } else {
+      fab.classList.add('hidden-fab');
+    }
+  }
+
+  // Refresh reports when going home
+  if (page === 'home') {
+    // Kick off search index population if it hasn't started
+    if (!searchIndexReadyPromise) {
+        searchIndexReadyPromise = populateSearchIndex();
+    }
+
+    renderReports();
+    renderRatings();
+    switchHomeTab('reports');
+    animateHeroText();
+    requestAnimationFrame(() => requestAnimationFrame(updateTabIndicator));
+  }
+  if (page === 'login') {
+    renderActivity();
+    if (auth.currentUser) {
+      switchProfileTab(defaultTab);
+      switchActivityTab(activitySubTab);
+      requestAnimationFrame(() => requestAnimationFrame(updateTabIndicator));
+    }
+  }
+  if (page === 'admin-dashboard') {
+    renderAdminDashboard();
+    switchAdminTab('verified');
+    requestAnimationFrame(() => requestAnimationFrame(updateTabIndicator));
+  }
+}
+
+/* HERO TEXT ANIMATION */
+function animateHeroText() {
+  const styleId = 'hero-anim-style-v2';
+  if (!document.getElementById(styleId)) {
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .hero-fade-in {
+        opacity: 0;
+        animation: fadeInUp 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      }
+      .typing-cursor {
+        border-right: 3px solid #8b5cf6;
+        animation: blinkCursor 0.8s step-end infinite;
+        padding-right: 4px;
+      }
+      @keyframes blinkCursor {
+        from, to { border-color: #8b5cf6; }
+        50% { border-color: transparent; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // 1. Animate "Before You Buy..." (Fade In)
+  const phrase1 = "Before You Buy, Ask One Question";
+  const xpath1 = `//*[contains(text(), "${phrase1}")]`;
+  const result1 = document.evaluate(xpath1, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+  const el1 = result1.singleNodeValue;
+  
+  if (el1) {
+    el1.classList.remove('hero-text-anim'); // Cleanup old
+    el1.classList.remove('hero-fade-in');
+    void el1.offsetWidth;
+    el1.classList.add('hero-fade-in');
+  }
+
+  // 2. Animate "Is it a scam?" (Typewriter Effect)
+  let el2 = document.getElementById('hero-typing-target');
+  
+  // If not tagged yet, find it by text
+  if (!el2) {
+      const phrase2 = "Is it a scam?";
+      const xpath2 = `//*[contains(text(), "${phrase2}")]`;
+      const result2 = document.evaluate(xpath2, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+      el2 = result2.singleNodeValue;
+      if (el2) el2.id = 'hero-typing-target';
+  }
+
+  if (el2) {
+      el2.classList.remove('hero-text-anim'); // Cleanup old
+      
+      // Clear any existing typing timeout to prevent conflicts
+      if (el2.typeTimeout) clearTimeout(el2.typeTimeout);
+      
+      const text = "Is it a scam?";
+      el2.textContent = ""; // Clear text
+      el2.classList.add('typing-cursor');
+      el2.style.display = 'inline-block'; // Ensure cursor behaves
+      el2.style.opacity = '1'; // Ensure visibility
+      
+      let charIndex = 0;
+      
+      function typeChar() {
+          if (charIndex < text.length) {
+              el2.textContent += text.charAt(charIndex);
+              charIndex++;
+              // Randomize speed for "human" feel (30ms to 90ms)
+              const randomSpeed = 30 + Math.random() * 60; 
+              el2.typeTimeout = setTimeout(typeChar, randomSpeed);
+          }
+      }
+      
+      // Start typing after the first line has started fading in
+      el2.typeTimeout = setTimeout(typeChar, 600);
+  }
+}
+
+/* GOOGLE LOGIN PLACEHOLDER */
+function googleLogin() {
+  const provider = new GoogleAuthProvider();
+  signInWithPopup(auth, provider)
+    .then((result) => {
+      const user = result.user;
+      console.log("User logged in:", user);
+      showToast("Logged in as: " + user.displayName, "success");
+      showPage('home');
+    }).catch((error) => {
+      console.error("Login failed:", error);
+      showToast("Login failed: " + error.message, "error");
+    });
+}
+
+/* LOGOUT FUNCTION */
+function logout() {
+  signOut(auth).then(() => {
+    showToast("Logged out successfully.", "info");
+    showPage('home');
+  }).catch((error) => {
+    console.error("Logout failed:", error);
+  });
+}
+
+/* AUTH STATE OBSERVER */
+onAuthStateChanged(auth, (user) => {
+  const navLogin = document.getElementById('nav-login');
+  const authContainer = document.querySelector('.auth-container');
+  const activitySection = document.getElementById('user-activity-section');
+  const profileTabs = document.getElementById('profile-tabs');
+
+  if (user) {
+    // User is signed in: Show profile pic in navbar
+    navLogin.innerHTML = `<img src="${user.photoURL}" alt="Profile" style="width:28px; height:28px; border-radius:50%; vertical-align:middle; border: 2px solid #8b5cf6;">`;
+    
+    // Update Login Page UI to show Logout option
+    if (authContainer) {
+      authContainer.innerHTML = `
+        <h1>Welcome, ${user.displayName.split(' ')[0]}</h1>
+        <img src="${user.photoURL}" style="width:80px; height:80px; border-radius:50%; margin: 20px 0;">
+        <p>You are currently logged in.</p>
+        <button class="google-btn" onclick="logout()" style="background: #ff4d4d; color: white;">Logout</button>
+      `;
+      
+      // Admin Dashboard Button
+      if (user.uid === ADMIN_UID) {
+          authContainer.innerHTML += `<button onclick="showPage('admin-dashboard')" class="visit-btn" style="width:100%; margin-top:10px; background:linear-gradient(135deg, #6d28d9, #9333ea); border:none; color:white;">Open Admin Dashboard</button>`;
+      }
+    }
+
+    // Show tabs and set default view
+    if (profileTabs) profileTabs.classList.remove('hidden');
+    switchProfileTab('profile');
+    switchActivityTab('reports');
+    renderActivity();
+  } else {
+    // User is signed out: Show "Login" text
+    navLogin.innerHTML = 'Login';
+    
+    if (authContainer) {
+      authContainer.innerHTML = `
+        <h1>Login</h1>
+        <p>Sign in to submit and track reports.</p>
+        <button class="google-btn" onclick="googleLogin()">Continue with Google</button>
+        <small style="opacity:0.6;">Firebase authentication is active.</small>
+      `;
+    }
+
+    // Hide Activity Section
+    if (profileTabs) profileTabs.classList.add('hidden');
+    authContainer.classList.remove('hidden'); // Ensure login box is visible
+  }
+});
+
+/* COUNTRY CODES FOR PHONE INPUT */
+const countryCodes = [
+    { code: '+1', iso: 'us', flag: '🇺🇸', name: 'USA/CA' },
+    { code: '+44', iso: 'gb', flag: '🇬🇧', name: 'UK' },
+    { code: '+33', iso: 'fr', flag: '🇫🇷', name: 'France' },
+    { code: '+49', iso: 'de', flag: '🇩🇪', name: 'Germany' },
+    { code: '+216', iso: 'tn', flag: '🇹🇳', name: 'Tunisia' },
+    { code: '+213', iso: 'dz', flag: '🇩🇿', name: 'Algeria' },
+    { code: '+212', iso: 'ma', flag: '🇲🇦', name: 'Morocco' },
+    { code: '+20', iso: 'eg', flag: '🇪🇬', name: 'Egypt' },
+    { code: '+971', iso: 'ae', flag: '🇦🇪', name: 'UAE' },
+    { code: '+966', iso: 'sa', flag: '🇸🇦', name: 'KSA' },
+    { code: '+91', iso: 'in', flag: '🇮🇳', name: 'India' },
+    { code: '+86', iso: 'cn', flag: '🇨🇳', name: 'China' },
+    { code: '+7', iso: 'ru', flag: '🇷🇺', name: 'Russia' },
+    { code: '+81', iso: 'jp', flag: '🇯🇵', name: 'Japan' },
+    { code: '+39', iso: 'it', flag: '🇮🇹', name: 'Italy' },
+    { code: '+34', iso: 'es', flag: '🇪🇸', name: 'Spain' },
+    { code: '+55', iso: 'br', flag: '🇧🇷', name: 'Brazil' },
+    { code: '+61', iso: 'au', flag: '🇦🇺', name: 'Australia' },
+    { code: '+90', iso: 'tr', flag: '🇹🇷', name: 'Turkey' },
+    { code: '+234', iso: 'ng', flag: '🇳🇬', name: 'Nigeria' }
+];
+
+function initCountrySelects() {
+    const selects = [document.getElementById('rate-country-select'), document.getElementById('scam-country-select')];
+    const optionsHTML = countryCodes.map(c => `<option value="${c.code}">${c.flag} ${c.code}</option>`).join('');
+    
+    selects.forEach(sel => {
+        if (sel) {
+            sel.innerHTML = optionsHTML;
+            // Try to set default based on user locale or just default to first
+            sel.value = '+1'; 
+        }
+    });
+}
+
+/* INJECT GLOBAL STYLES */
+function injectGlobalStyles() {
+  const styleId = 'global-dynamic-styles';
+  if (document.getElementById(styleId)) return;
+  
+  const style = document.createElement('style');
+  style.id = styleId;
+  style.textContent = `
+    .preview-widget, .phone-card {
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .preview-widget:hover, .phone-card:hover {
+      transform: translateY(-2px);
+      border-color: #8b5cf6 !important;
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+    }
+    .search-suggestions {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 0 0 8px 8px;
+      z-index: 1000;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      overflow: hidden;
+    }
+    .suggestion-item {
+      padding: 10px 15px;
+      display: flex; align-items: center; gap: 10px;
+      cursor: pointer; border-bottom: 1px solid #21262d;
+    }
+    .suggestion-item:hover { background: #21262d; }
+    .suggestion-item:last-child { border-bottom: none; }
+    .s-icon { font-size: 1.2em; }
+    .s-info { flex: 1; overflow: hidden; }
+    .s-name { color: #f0f6fc; font-weight: 600; font-size: 0.9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .s-url { color: #8b949e; font-size: 0.75em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  `;
+  document.head.appendChild(style);
+}
+
+/* REAL-TIME CHECKER */
+let typingTimer;
+
+function handleInput(inputId, previewId) {
+  clearTimeout(typingTimer);
+  
+  // Phone Number Logic: Show/Hide Country Selector
+  const input = document.getElementById(inputId);
+  const val = input.value.trim();
+  const isRate = inputId === 'rate-link';
+  const selectId = isRate ? 'rate-country-select' : 'scam-country-select';
+  const select = document.getElementById(selectId);
+
+  if (select) {
+      // If starts with a digit (0-9), show selector. If starts with '+' or text, hide it.
+      if (/^\d/.test(val)) {
+          select.classList.remove('hidden');
+      } else {
+          select.classList.add('hidden');
+      }
+  }
+
+  const preview = document.getElementById(previewId);
+  if (preview) preview.classList.add('hidden');
+
+  if (val) {
+    typingTimer = setTimeout(() => checkLink(inputId, previewId), 800);
+  }
+}
+
+/* LINK CHECKER FUNCTION */
+async function checkLink(inputId, previewId) {
+  const inputEl = document.getElementById(inputId);
+  const inputVal = inputEl.value.trim();
+  const preview = document.getElementById(previewId);
+
+  // Handle Country Code Prepend for Preview
+  let val = inputVal;
+  const isRate = inputId === 'rate-link';
+  const selectId = isRate ? 'rate-country-select' : 'scam-country-select';
+  const select = document.getElementById(selectId);
+  
+  if (select && !select.classList.contains('hidden')) {
+      val = select.value + val;
+  }
+
+  if (!val) {
+    preview.classList.add('hidden');
+    return;
+  }
+
+  preview.classList.remove('hidden');
+
+  // 1. Initial Local Render (Fast)
+  const username = extractUsername(val);
+  const platform = getPlatformInfo(val);
+
+  renderPreview({
+    username: username,
+    platform: platform,
+    loading: true
+  }, preview);
+
+  // 2. Fetch Real Metadata (Microlink)
+  // Skip for phone numbers
+  if (platform.type === 'phone') {
+      renderPreview({ username, platform, loading: false }, preview);
+      return;
+  }
+
+  try {
+      const response = await fetch(`https://api.microlink.io/?url=${encodeURIComponent(val)}`);
+      const json = await response.json();
+      
+      // Check if input hasn't changed significantly while fetching
+      if (document.getElementById(inputId).value.trim() !== inputVal) return;
+
+      if (json.status === 'success') {
+          const meta = json.data;
+          
+          // --- INTELLIGENT PARSING ---
+          let realName = null;
+          let profilePic = meta.image ? meta.image.url : null;
+          
+          // 1. Name Extraction Strategy
+          // Try Author first (often cleaner for articles/blogs)
+          if (meta.author && typeof meta.author === 'string' && meta.author.length > 1 && meta.author.length < 50) {
+              if (!meta.author.toLowerCase().includes(platform.name.toLowerCase())) {
+                  realName = meta.author;
+              }
+          }
+
+          // If no author, try Title with heavy cleaning
+          if (!realName && meta.title) {
+              let t = meta.title;
+              const pName = platform.name;
+              
+              // Platform Specific Regex to extract Name from "Name (@user) | Platform"
+              if (pName === 'Instagram' || pName === 'X' || pName === 'Twitter' || pName === 'TikTok') {
+                  const match = t.match(/^(.+?) \(@/);
+                  if (match) t = match[1];
+              }
+              
+              if (pName === 'Facebook') t = t.replace(/ \| Facebook$/, '').replace(/ - Home$/, '');
+              if (pName === 'LinkedIn') t = t.split(' - ')[0];
+              if (pName === 'YouTube') t = t.replace(/ - YouTube$/, '');
+              if (pName === 'TikTok') t = t.replace(/ \| TikTok$/, '');
+
+              // Generic Publisher Cleanup (e.g. "Article Title | CNN")
+              if (meta.publisher) {
+                  const escPub = meta.publisher.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape regex chars
+                  const regex = new RegExp(` [\\|\\-] ${escPub}$`, 'i');
+                  t = t.replace(regex, '');
+              }
+              
+              realName = t.trim();
+          }
+
+          // 2. Name Validation (Filter out junk)
+          const badNames = ['Login', 'Sign Up', 'Welcome', 'Home', 'Profile', 'Page Not Found', '404', platform.name, 'Index', 'Main Page'];
+          if (realName) {
+              const lower = realName.toLowerCase();
+              // Reject if generic, too long (headline), or looks like a URL
+              if (badNames.some(b => lower === b.toLowerCase()) || lower.includes('login') || realName.length > 60 || realName.includes('http')) {
+                  realName = null;
+              }
+          }
+
+          // 3. Image Intelligence (Strict Mode)
+          // If the image URL contains "logo", "favicon", or matches the site logo, it's likely not a profile pic.
+          if (profilePic) {
+              const lowerImg = profilePic.toLowerCase();
+              if (lowerImg.includes('logo.') || lowerImg.includes('favicon') || lowerImg.includes('assets/brand') || (meta.logo && profilePic === meta.logo.url)) {
+                  profilePic = null; // Discard logo, fallback to platform icon/unavatar
+              }
+          }
+
+          // 4. Date / Age Extraction
+          let dateDisplay = null;
+          if (meta.date) {
+              const d = new Date(meta.date);
+              if (!isNaN(d.getTime())) dateDisplay = "📅 " + d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+          }
+          if (meta.description) {
+              const joinedMatch = meta.description.match(/(?:Joined|Member since|Born)\s+([A-Z][a-z]+(?:\s+\d{1,2})?,?\s+\d{4})/i);
+              if (joinedMatch) dateDisplay = "🎂 " + joinedMatch[0];
+          }
+
+          // Store Metadata for Submission
+          if (inputEl) {
+              inputEl.dataset.enrichedData = JSON.stringify({
+                  realName: realName,
+                  platformImage: profilePic,
+                  metaDescription: meta.description,
+                  metaTitle: meta.title
+              });
+          }
+
+          renderPreview({
+            username: username,
+            realName: realName,
+            image: profilePic,
+            description: meta.description,
+            date: dateDisplay,
+            platform: platform,
+            loading: false
+          }, preview);
+      } else {
+          renderPreview({ username, platform, loading: false }, preview);
+      }
+  } catch (e) {
+      console.warn("Metadata fetch failed", e);
+      renderPreview({ username, platform, loading: false }, preview);
+  }
+}
+
+/* RENDER UI */
+function renderPreview(data, container) {
+  const { username, platform, realName, image, description, date, loading } = data;
+  
+  const flagDisplay = platform.flagImg 
+    ? `<img src="${platform.flagImg}" style="width:20px; height:14px; object-fit:cover; border-radius:2px; display:inline-block; vertical-align:middle; margin-right:6px;">` 
+    : (platform.flag ? `<span style="font-size: 1.2em; margin-right:4px;">${platform.flag}</span>` : '');
+
+  const displayTitle = realName || username;
+  const displayDesc = description ? description : (loading ? 'Fetching preview...' : 'No description available.');
+
+  container.innerHTML = `
+    <div class="preview-widget" style="background:#0f1115; border-radius: 12px; border: 1px solid #30363d; overflow:hidden; transition: all 0.2s ease; ${loading ? 'opacity:0.8' : ''}">
+      ${image ? `
+      <div style="width:100%; height:160px; overflow:hidden; border-bottom:1px solid #30363d; position:relative;">
+        <img src="${image}" style="width:100%; height:100%; object-fit:cover;">
+        ${loading ? '<div style="position:absolute; inset:0; background:rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:center;"><span class="typing-cursor">...</span></div>' : ''}
+      </div>
+      ` : ''}
+      
+      <div style="padding:12px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+           <div style="width:36px; height:36px; background:${platform.color}; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+             ${platform.icon}
+           </div>
+           <div style="min-width:0; flex:1;">
+               <strong style="display:block; font-size:1.1em; color:#f0f6fc; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${displayTitle}</strong>
+               <small style="color:#8b949e; font-size:0.85em;">${platform.type === 'phone' ? '' : 'via ' + platform.name}</small>
+           </div>
+        </div>
+        
+        ${(!image || description) ? `
+        <p style="font-size:0.9em; color:#b0b8c3; margin:0 0 12px 0; line-height:1.5; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">
+           ${displayDesc}
+        </p>
+        ` : ''}
+        
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8em; color:#8b949e; border-top:1px solid #21262d; padding-top:8px;">
+           <span style="display:flex; align-items:center;">${flagDisplay}${platform.type === 'phone' ? platform.name : 'Link Preview'}</span>
+           ${date ? `<span style="background:#1f2937; padding:2px 8px; border-radius:12px; color:#e5e7eb; font-weight:500;">${date}</span>` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* TABS & RATING LOGIC */
+function switchTab(tab) {
+  const rateForm = document.getElementById('form-rate');
+  const scamForm = document.getElementById('form-scam');
+  const rateBtn = document.getElementById('tab-rate');
+  const scamBtn = document.getElementById('tab-scam');
+
+  if (tab === 'rate') {
+    rateForm.classList.remove('hidden');
+    scamForm.classList.add('hidden');
+    rateBtn.classList.add('active');
+    scamBtn.classList.remove('active');
+  } else {
+    rateForm.classList.add('hidden');
+    scamForm.classList.remove('hidden');
+    rateBtn.classList.remove('active');
+    scamBtn.classList.add('active');
+  }
+}
+
+function setRating(stars) {
+  document.getElementById('rating-input').value = stars;
+  const starElements = document.querySelectorAll('.star');
+  starElements.forEach((el, index) => {
+    el.classList.toggle('filled', index < stars);
+  });
+}
+
+/* HOME PAGE TABS */
+function switchHomeTab(tab) {
+  const reportsGrid = document.getElementById('local-reports-grid');
+  const ratingsGrid = document.getElementById('local-ratings-grid');
+  const reportsBtn = document.getElementById('home-reports-tab-btn');
+  const ratingsBtn = document.getElementById('home-ratings-tab-btn');
+
+  if (!reportsGrid || !ratingsGrid || !reportsBtn || !ratingsBtn) return;
+
+  if (tab === 'reports') {
+    reportsGrid.classList.remove('hidden');
+    ratingsGrid.classList.add('hidden');
+    reportsBtn.classList.add('active');
+    ratingsBtn.classList.remove('active');
+    
+    // Animation: Slide in from Left
+    reportsGrid.classList.remove('animate-slide-left', 'animate-slide-right');
+    void reportsGrid.offsetWidth; // Trigger reflow
+    reportsGrid.classList.add('animate-slide-left');
+    requestAnimationFrame(() => {
+        resizeAllGridItems();
+        setTimeout(resizeAllGridItems, 300);
+    });
+
+  } else { // ratings
+    reportsGrid.classList.add('hidden');
+    ratingsGrid.classList.remove('hidden');
+    reportsBtn.classList.remove('active');
+    ratingsBtn.classList.add('active');
+    
+    // Animation: Slide in from Right
+    ratingsGrid.classList.remove('animate-slide-left', 'animate-slide-right');
+    void ratingsGrid.offsetWidth; // Trigger reflow
+    ratingsGrid.classList.add('animate-slide-right');
+    requestAnimationFrame(() => {
+        resizeAllGridItems();
+        setTimeout(resizeAllGridItems, 300);
+    });
+  }
+  
+  requestAnimationFrame(updateTabIndicator);
+}
+
+function updateTabIndicator() {
+  const selectors = document.querySelectorAll('.home-tab-selector');
+  selectors.forEach(selector => {
+    const activeBtn = selector.querySelector('.home-tab-btn.active');
+    const indicator = selector.querySelector('.tab-indicator');
+    
+    if (activeBtn && indicator) {
+      const containerRect = selector.getBoundingClientRect();
+      const btnRect = activeBtn.getBoundingClientRect();
+      
+      if (containerRect.width > 0) {
+        const left = btnRect.left - containerRect.left;
+        indicator.style.width = `${btnRect.width}px`;
+        indicator.style.left = `${left}px`;
+      }
+    }
+  });
+}
+
+/* PROFILE PAGE TABS */
+function switchProfileTab(tab) {
+  const profileContent = document.querySelector('.auth-container');
+  const activityContent = document.getElementById('user-activity-section');
+  const profileTabBtn = document.getElementById('profile-tab-btn');
+  const activityTabBtn = document.getElementById('activity-tab-btn');
+
+  if (!profileContent || !activityContent || !profileTabBtn || !activityTabBtn) return;
+
+  if (tab === 'profile') {
+    profileContent.classList.remove('hidden');
+    activityContent.classList.add('hidden');
+    profileTabBtn.classList.add('active');
+    activityTabBtn.classList.remove('active');
+  } else { // activity
+    profileContent.classList.add('hidden');
+    activityContent.classList.remove('hidden');
+    profileTabBtn.classList.remove('active');
+    activityTabBtn.classList.add('active');
+    requestAnimationFrame(() => requestAnimationFrame(updateTabIndicator));
+
+    // Fix Grid Layout on Tab Switch
+    requestAnimationFrame(() => {
+        resizeAllGridItems();
+        setTimeout(resizeAllGridItems, 300);
+    });
+  }
+}
+
+/* ACTIVITY PAGE TABS */
+function switchActivityTab(tab) {
+  const reportsGrid = document.getElementById('activity-reports');
+  const ratingsGrid = document.getElementById('activity-ratings');
+  const reportsBtn = document.getElementById('activity-reports-tab-btn');
+  const ratingsBtn = document.getElementById('activity-ratings-tab-btn');
+
+  if (!reportsGrid || !ratingsGrid || !reportsBtn || !ratingsBtn) return;
+
+  if (tab === 'reports') {
+    reportsGrid.classList.remove('hidden');
+    ratingsGrid.classList.add('hidden');
+    reportsBtn.classList.add('active');
+    ratingsBtn.classList.remove('active');
+
+    // Animation: Slide in from Left
+    reportsGrid.classList.remove('animate-slide-left', 'animate-slide-right');
+    void reportsGrid.offsetWidth; // Trigger reflow
+    reportsGrid.classList.add('animate-slide-left');
+    requestAnimationFrame(() => {
+        resizeAllGridItems();
+        setTimeout(resizeAllGridItems, 300);
+    });
+
+  } else { // ratings
+    reportsGrid.classList.add('hidden');
+    ratingsGrid.classList.remove('hidden');
+    reportsBtn.classList.remove('active');
+    ratingsBtn.classList.add('active');
+
+    // Animation: Slide in from Right
+    ratingsGrid.classList.remove('animate-slide-left', 'animate-slide-right');
+    void ratingsGrid.offsetWidth; // Trigger reflow
+    ratingsGrid.classList.add('animate-slide-right');
+    requestAnimationFrame(() => {
+        resizeAllGridItems();
+        setTimeout(resizeAllGridItems, 300);
+    });
+  }
+  requestAnimationFrame(() => requestAnimationFrame(updateTabIndicator));
+}
+
+/* ADMIN DASHBOARD TABS */
+function switchAdminTab(tab) {
+  const verifiedSection = document.getElementById('admin-verified-section');
+  const bannedSection = document.getElementById('admin-banned-section');
+  const blacklistSection = document.getElementById('admin-blacklist-section');
+  
+  const verifiedBtn = document.getElementById('admin-verified-tab-btn');
+  const bannedBtn = document.getElementById('admin-banned-tab-btn');
+  const blacklistBtn = document.getElementById('admin-blacklist-tab-btn');
+  
+  const subtitle = document.getElementById('admin-dashboard-subtitle');
+
+  if (!verifiedSection || !bannedSection || !verifiedBtn || !bannedBtn) return;
+
+  // Reset all
+  verifiedSection.classList.add('hidden');
+  bannedSection.classList.add('hidden');
+  if (blacklistSection) blacklistSection.classList.add('hidden');
+  
+  verifiedBtn.classList.remove('active');
+  bannedBtn.classList.remove('active');
+  if (blacklistBtn) blacklistBtn.classList.remove('active');
+
+  if (tab === 'verified') {
+    verifiedSection.classList.remove('hidden');
+    verifiedBtn.classList.add('active');
+    if (subtitle) subtitle.innerText = "Manage verified community members.";
+    
+    // Animation
+    verifiedSection.classList.remove('animate-slide-left', 'animate-slide-right');
+    void verifiedSection.offsetWidth;
+    verifiedSection.classList.add('animate-slide-left');
+  } else if (tab === 'banned') {
+    bannedSection.classList.remove('hidden');
+    bannedBtn.classList.add('active');
+    if (subtitle) subtitle.innerText = "Manage restricted and banned users.";
+
+    // Animation
+    bannedSection.classList.remove('animate-slide-left', 'animate-slide-right');
+    void bannedSection.offsetWidth;
+    bannedSection.classList.add('animate-slide-right');
+  } else if (tab === 'blacklist') {
+    if (blacklistSection) {
+        blacklistSection.classList.remove('hidden');
+        if (blacklistBtn) blacklistBtn.classList.add('active');
+        if (subtitle) subtitle.innerText = "Manage blacklisted domains.";
+        
+        blacklistSection.classList.remove('animate-slide-left', 'animate-slide-right');
+        void blacklistSection.offsetWidth;
+        blacklistSection.classList.add('animate-slide-right');
+    }
+  }
+  requestAnimationFrame(updateTabIndicator);
+
+  // Fix Grid Layout on Tab Switch (Recalculate heights for newly visible items)
+  setTimeout(resizeAllGridItems, 50);
+  setTimeout(resizeAllGridItems, 300);
+}
+
+/* ==========================================
+   INTELLIGENT SEARCH SYSTEM (AI-ENHANCED)
+   ========================================== */
+let searchIndexReadyPromise = null; // Promise to track when the index is populated
+
+async function populateSearchIndex() {
+    // Prevent re-fetching if already populated
+    if (SearchSystem.index.length > 0) return;
+
+    const qReports = query(collection(db, "reports"));
+    const qRatings = query(collection(db, "ratings"));
+
+    try {
+        const [reportsSnap, ratingsSnap] = await Promise.all([getDocs(qReports), getDocs(qRatings)]);
+
+        const reports = [];
+        reportsSnap.forEach(doc => reports.push(doc.data()));
+        SearchSystem.ingest(reports, 'report');
+
+        const ratings = [];
+        ratingsSnap.forEach(doc => ratings.push(doc.data()));
+        SearchSystem.ingest(ratings, 'rating');
+
+    } catch (error) {
+        console.error("Failed to populate search index:", error);
+        // We still resolve so we don't block the search UI forever, it will just have no results.
+    }
+}
+
+const SearchSystem = {
+    index: [],
+    
+    // Knowledge Graph / Synonyms for "AI" Understanding
+    synonyms: {
+        'scam': ['fake', 'fraud', 'money', 'theft', 'liar', 'unsafe', 'risk', 'bad', 'scheme', 'phishing'],
+        'fake': ['replica', 'knockoff', 'counterfeit', 'copy', 'dupe', 'scam', 'bogus', 'faux'],
+        'shipping': ['delivery', 'late', 'arrived', 'wait', 'tracking', 'ship', 'package', 'order', 'dispatch'],
+        'money': ['refund', 'paid', 'cost', 'price', 'charge', 'bank', 'card', 'dollar', 'currency', 'wallet'],
+        'service': ['rude', 'reply', 'response', 'ignore', 'blocked', 'support', 'chat', 'ghosted'],
+        'quality': ['broken', 'damaged', 'material', 'plastic', 'condition', 'poor', 'cheap', 'ruined']
+    },
+
+    // Ingest data into the search index
+    ingest: function(items, type) {
+        items.forEach(item => {
+            const url = item.url ? item.url.toLowerCase() : '';
+            // Avoid duplicates based on URL in the index
+            if (!this.index.some(i => i.url === url)) {
+                this.index.push({
+                    url: url,
+                    name: (item.displayName || item.realName || '').toLowerCase(),
+                    type: type, // 'report' or 'rating'
+                    data: item
+                });
+            }
+        });
+    },
+
+    // Intelligent Scoring Algorithm
+    score: function(item, queryTokens) {
+        let score = 0;
+        const url = item.url;
+        const name = item.name;
+        const desc = item.desc; // Description passed during search check
+
+        queryTokens.forEach(token => {
+            if (!token) return;
+            
+            // 1. Exact/Partial Matches (High Weight)
+            if (url.includes(token)) score += 30;
+            if (name.includes(token)) score += 20;
+            
+            // 2. Description/Context Match (Medium Weight)
+            if (desc && desc.includes(token)) score += 10;
+
+            // 3. Synonym/Intent Match (AI Layer)
+            for (const [key, words] of Object.entries(this.synonyms)) {
+                if (key === token || words.includes(token)) {
+                    // If the user typed a synonym (e.g. "fake"), check if the item contains related words
+                    if (url.includes(key) || name.includes(key)) score += 15;
+                    if (desc && desc.includes(key)) score += 8;
+                    
+                    // Check cross-synonyms in description
+                    if (desc) {
+                        words.forEach(syn => {
+                            if (desc.includes(syn)) score += 5;
+                        });
+                    }
+                }
+            }
+        });
+
+        return score;
+    },
+
+    // Get Suggestions
+    getSuggestions: function(query) {
+        if (!query || query.length < 2) return [];
+        const tokens = query.toLowerCase().split(/\s+/).filter(t => t.length > 0);
+        
+        // Score all indexed items
+        const results = this.index.map(item => {
+            // For suggestions, we only check URL and Name (no description for speed/layout)
+            return { item, score: this.score({ ...item, desc: '' }, tokens) };
+        });
+
+        // Filter by relevance and sort
+        return results
+            .filter(r => r.score > 0)
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 5) // Top 5 suggestions
+            .map(r => r.item);
+    }
+};
+
+function initSearchUI() {
+    const input = document.getElementById('search-input');
+    if (!input) return;
+
+    // Create Suggestions Container
+    let suggestions = document.getElementById('search-suggestions');
+    if (!suggestions) {
+        suggestions = document.createElement('div');
+        suggestions.id = 'search-suggestions';
+        suggestions.className = 'search-suggestions hidden';
+        document.body.appendChild(suggestions); // Append to body to avoid clipping
+    }
+
+    const positionSuggestions = () => {
+        const rect = input.getBoundingClientRect();
+        suggestions.style.top = `${rect.bottom + window.scrollY}px`;
+        suggestions.style.left = `${rect.left + window.scrollX}px`;
+        suggestions.style.width = `${rect.width}px`;
+    };
+
+    // Input Listener
+    input.addEventListener('input', async (e) => {
+        const val = e.target.value.trim();
+        if (val.length < 2) {
+            suggestions.classList.add('hidden');
+            return;
+        }
+
+        // Ensure the search index is ready before proceeding.
+        if (searchIndexReadyPromise) {
+            await searchIndexReadyPromise;
+        }
+
+        const matches = SearchSystem.getSuggestions(val);
+        if (matches.length > 0) {
+            suggestions.innerHTML = matches.map(m => {
+                const icon = m.type === 'report' ? '🚨' : '⭐';
+                const display = m.data.displayName || m.data.realName || extractUsername(m.url);
+                return `
+                    <div class="suggestion-item" onclick="applySuggestion('${escapeHTML(m.url)}')">
+                        <span class="s-icon">${icon}</span>
+                        <div class="s-info">
+                            <div class="s-name">${escapeHTML(display)}</div>
+                            <div class="s-url">${escapeHTML(m.url)}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            positionSuggestions();
+            suggestions.classList.remove('hidden');
+        } else {
+            suggestions.classList.add('hidden');
+        }
+    });
+
+    // Reposition on scroll/resize
+    window.addEventListener('scroll', () => {
+        if (!suggestions.classList.contains('hidden')) positionSuggestions();
+    });
+    window.addEventListener('resize', () => {
+        if (!suggestions.classList.contains('hidden')) positionSuggestions();
+    });
+
+    // Hide on click outside
+    document.addEventListener('click', (e) => {
+        if (!input.contains(e.target) && !suggestions.contains(e.target)) {
+            suggestions.classList.add('hidden');
+        }
+    });
+    
+    // Hide on Enter
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') suggestions.classList.add('hidden');
+    });
+}
+
+function applySuggestion(url) {
+    const input = document.getElementById('search-input');
+    input.value = url;
+    document.getElementById('search-suggestions').classList.add('hidden');
+    performSearch();
+}
+
+/* ==========================================
+   FIREBASE DATABASE LOGIC
+   ========================================== */
+
+// Helper: Extract username from URL
+function extractUsername(url) {
+  try {
+    // If it's a phone number, just return it
+    if (/^[\+]?[\d\s\-\(\)]{7,}$/.test(url) && !/[a-z]/i.test(url)) return url;
+
+    let clean = url.replace(/(^\w+:|^)\/\//, '').replace(/^www\./, '');
+    clean = clean.split('?')[0].replace(/\/$/, '');
+    
+    const parts = clean.split('/');
+    
+    // Handle Platform Specifics (Ignore non-profile paths)
+    if (parts[0].includes('instagram.com') || parts[0].includes('facebook.com') || parts[0].includes('twitter.com') || parts[0].includes('x.com') || parts[0].includes('tiktok.com')) {
+        if (parts.length > 1) {
+            const segment = parts[1];
+            if (['p', 'reel', 'reels', 'stories', 'explore', 'tv', 'watch', 'groups', 'marketplace', 'photo', 'video'].includes(segment)) {
+                return parts[0]; // Return domain if path is not a profile
+            }
+            return segment.replace(/^@/, '');
+        }
+    }
+
+    if (parts.length > 1 && parts[1]) {
+        return parts[1];
+    }
+    return parts[0];
+  } catch (e) {
+    return url;
+  }
+}
+
+// Helper: Get Country from Phone
+function getPhoneCountry(number) {
+    const clean = number.replace(/\D/g, '');
+    // Sort by length desc to match longest prefix first
+    const sorted = countryCodes.sort((a, b) => b.code.length - a.code.length);
+    
+    for (const c of sorted) {
+        const cleanCode = c.code.replace(/\D/g, '');
+        if (clean.startsWith(cleanCode)) {
+            return { 
+                name: c.name, 
+                flag: c.flag, 
+                iso: c.iso,
+                img: `https://flagcdn.com/w80/${c.iso}.png` 
+            };
+        }
+    }
+    return { name: 'International', flag: '🌍', iso: null, img: null };
+}
+
+// Helper: Detect Platform
+function getPlatformInfo(url) {
+  // 1. Check for Phone Number
+  if (/^[\+]?[\d\s\-\(\)]{4,}$/.test(url) && !/[a-z]/i.test(url)) {
+      const info = getPhoneCountry(url);
+      return { 
+          icon: `<svg viewBox="0 0 24 24" style="width:100%;height:100%;fill:#8b949e;"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>`, 
+          color: 'transparent', 
+          name: info.name,
+          flag: info.flag,
+          flagImg: info.img,
+          type: 'phone'
+      };
+  }
+
+  const lower = url.toLowerCase();
+  
+  const icons = {
+    instagram: `<svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:white;"><path d="M7.8,2H16.2C19.4,2 22,4.6 22,7.8V16.2A5.8,5.8 0 0,1 16.2,22H7.8C4.6,22 2,19.4 2,16.2V7.8A5.8,5.8 0 0,1 7.8,2M7.6,4A3.6,3.6 0 0,0 4,7.6V16.4C4,18.39 5.61,20 7.6,20H16.4A3.6,3.6 0 0,0 20,16.4V7.6C20,5.61 18.39,4 16.4,4H7.6M17.25,5.5A1.25,1.25 0 0,1 18.5,6.75A1.25,1.25 0 0,1 17.25,8A1.25,1.25 0 0,1 16,6.75A1.25,1.25 0 0,1 17.25,5.5M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z"/></svg>`,
+    facebook: `<svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:white;"><path d="M12 2.04C6.5 2.04 2.54 6.5 2.54 12c0 4.97 3.63 9.11 8.44 9.88v-7.03h-2.54v-2.85h2.54V9.75c0-2.5 1.49-3.89 3.77-3.89 1.09 0 2.23.19 2.23.19v2.47h-1.26c-1.24 0-1.65.77-1.65 1.56v1.88h2.76l-.44 2.85h-2.32v7.03c4.81-.77 8.44-4.91 8.44-9.88 0-5.5-4.46-9.96-9.96-9.96z"/></svg>`,
+    x: `<svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:white;"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`,
+    tiktok: `<svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:white;"><path d="M12.5 3v12.5a3.5 3.5 0 1 1-3.5-3.5c.2 0 .4.03.59.08V8.56a7.01 7.01 0 0 0-4.09 6.94c0 3.87 3.13 7 7 7s7-3.13 7-7V7.5a8.9 8.9 0 0 0 4.5 2.5V6.5a5.5 5.5 0 0 1-5.5-5.5h-3.5z"/></svg>`,
+    website: `<svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:white;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>`
+  };
+
+  let platformData = null;
+
+  if (lower.includes('instagram')) platformData = { icon: icons.instagram, color: '#E1306C', name: 'Instagram' };
+  else if (lower.includes('facebook')) platformData = { icon: icons.facebook, color: '#1877F2', name: 'Facebook' };
+  else if (lower.includes('twitter') || lower.includes('x.com')) platformData = { icon: icons.x, color: '#000000', name: 'X' };
+  else if (lower.includes('tiktok')) platformData = { icon: icons.tiktok, color: '#000000', name: 'TikTok' };
+
+  if (platformData) {
+      // Try to fetch Social Avatar
+      const username = extractUsername(url);
+      
+      // Skip if username looks like a domain (extraction failed or it's a root link)
+      if (username.includes('.') && !username.includes(' ')) {
+          return platformData;
+      }
+
+      let avatarUrl = null;
+
+      // Use fallback=false to trigger onerror if image not found
+      if (lower.includes('instagram')) avatarUrl = `https://unavatar.io/instagram/${username}?fallback=false`;
+      else if (lower.includes('twitter') || lower.includes('x.com')) avatarUrl = `https://unavatar.io/twitter/${username}?fallback=false`;
+      else if (lower.includes('facebook')) avatarUrl = `https://unavatar.io/facebook/${username}?fallback=false`;
+      else if (lower.includes('tiktok')) avatarUrl = `https://unavatar.io/tiktok/${username}?fallback=false`;
+      
+      if (avatarUrl) {
+          const originalIcon = platformData.icon;
+          platformData.icon = `
+            <div style="position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; overflow:hidden; border-radius:inherit;">
+                <img src="${avatarUrl}" 
+                     style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:2;" 
+                     onload="this.nextElementSibling.style.opacity='0'"
+                     onerror="this.style.display='none'"
+                     referrerpolicy="no-referrer"
+                     loading="lazy">
+                <div style="transition:opacity 0.2s; width:100%; height:100%; display:flex; align-items:center; justify-content:center;">
+                    ${originalIcon}
+                </div>
+            </div>
+          `;
+      }
+      return platformData;
+  }
+  
+  // Fallback: Use Real Favicon
+  let domain = url;
+  try {
+      const urlObj = new URL(url.startsWith('http') ? url : `https://${url}`);
+      domain = urlObj.hostname;
+  } catch (e) {
+      domain = url.split('/')[0];
+  }
+
+  // Use Google's favicon service
+  return { icon: `<img src="https://www.google.com/s2/favicons?domain=${domain}&sz=128" style="width:100%; height:100%; object-fit:contain;">`, color: '#21262d', name: 'Website' };
+}
+
+// Image Preview Handler
+async function previewImage(input) {
+  const previewContainer = document.getElementById('upload-preview-container');
+  const previewImg = document.getElementById('upload-preview');
+  
+  if (input.files && input.files[0]) {
+    const file = input.files[0];
+    
+    // 1. Basic Size/Type Check
+    if (!file.type.startsWith('image/')) {
+        showToast("Please upload an image file.", "error");
+        input.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+      previewImg.src = e.target.result;
+      
+      // 2. AI Verification (NSFW Check)
+      try {
+          const model = await nsfwjs.load();
+          const predictions = await model.classify(previewImg);
+          const isSafe = !predictions.some(p => (p.className === 'Porn' || p.className === 'Hentai') && p.probability > 0.5);
+          
+          if (!isSafe) {
+              showToast("Security Alert: Image flagged as inappropriate.", "error");
+              input.value = ''; // Clear input
+              previewContainer.classList.add('hidden');
+              return;
+          }
+      } catch (err) {
+          console.warn("AI Image check failed, proceeding with caution.", err);
+      }
+
+      previewContainer.classList.remove('hidden');
+    }
+    reader.readAsDataURL(input.files[0]);
+  } else {
+    previewContainer.classList.add('hidden');
+  }
+}
+
+// Helper: Process Image (Compress & Read)
+async function processImage(file) {
+  if (!file) return null;
+  
+  const options = {
+    // OPTIMIZED FOR FIRESTORE (Database Storage)
+    // We keep images under 100KB to avoid hitting the 1MB document limit
+    maxSizeMB: 0.1, 
+    maxWidthOrHeight: 600,
+    useWebWorker: true,
+    fileType: 'image/jpeg'
+  };
+
+  let imageFile = file;
+  try {
+    if (window.imageCompression) {
+      imageFile = await window.imageCompression(file, options);
+    }
+  } catch (err) {
+    console.warn("Compression failed, using original.", err);
+  }
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(imageFile);
+  });
+}
+
+/* ==========================================
+   AI CONTENT GUARD (Security & Moderation)
+   ========================================== */
+const AI_ContentGuard = {
+    // Multilingual Blocklist (EN, FR, TN/Derja)
+    // Client-side filter to prevent abuse and maintain platform quality.
+    offensiveTerms: [
+        // EN
+        'fuck', 'shit', 'bitch', 'asshole', 'cunt', 'dick', 'pussy', 'nigger', 'faggot', 'retard', 'kill yourself', 'suicide',
+        // FR
+        'merde', 'putain', 'connard', 'salope', 'encule', 'fils de pute', 'bite', 'couille', 'nique',
+        // TN (Derja)
+        'zebbi', 'nammi', '3asba', 'nayek', '9a7ba', 'sorm', 'zabbour', 'tahan', 'mnayek', '3as', 'zob', 'terma', 'farch'
+    ],
+    
+    spamTriggers: [
+        'buy now', 'click here', 'free money', 'crypto', 'investment', 'forex', 'whatsapp me', 
+        'gagnez de l\'argent', 'investissez', 'bitcoin', 'lottery', 'prize',
+        'rba7', 'flous', 'clicki houni', 'connectez-vous'
+    ],
+
+    analyze: function(text) {
+        if (!text) return { safe: true };
+        const lower = text.toLowerCase();
+        // Normalize to handle accents (e.g., 'béhi' -> 'behi')
+        const normalized = lower.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+        // 1. Offensive Content Check
+        const foundOffensive = this.offensiveTerms.find(term => {
+            // Check for exact word boundaries or specific dialect patterns
+            return new RegExp(`\\b${term}\\b`, 'i').test(normalized) || normalized.includes(term);
+        });
+
+        if (foundOffensive) {
+            return { safe: false, reason: "Your text contains inappropriate or offensive language." };
+        }
+
+        // 2. Spam Detection
+        if (this.spamTriggers.some(trigger => normalized.includes(trigger))) {
+            return { safe: false, reason: "Your text resembles spam or promotional content." };
+        }
+
+        // 3. Gibberish / Repetition (e.g., "aaaaaaa")
+        if (/(.)\1{4,}/.test(text)) {
+            return { safe: false, reason: "Text contains excessive repeated characters." };
+        }
+
+        return { safe: true };
+    }
+};
+
+// Submit Local Report
+async function submitReport() {
+  const linkInput = document.getElementById('scammer-link');
+  let link = linkInput.value.trim();
+  const nameInput = document.getElementById('scammer-name');
+  const descInput = document.getElementById('scammer-desc');
+  const name = nameInput.value.trim();
+  const description = descInput.value.trim();
+  
+  // Prepend Country Code if visible
+  const select = document.getElementById('scam-country-select');
+  if (select && !select.classList.contains('hidden')) {
+      link = select.value + link;
+  }
+  
+  // New Fields
+  const typeSelect = document.getElementById('scam-type-selector');
+  const scamType = typeSelect ? typeSelect.value : 'other';
+  const fileExpected = document.getElementById('file-expected');
+  const fileGot = document.getElementById('file-got');
+
+  const user = auth.currentUser;
+  const btn = document.querySelector('#form-scam .submit-btn');
+
+  // Check Ban Status (Server-Side Check)
+  const banSnap = await getDoc(doc(db, "banned_users", user.uid));
+  if (banSnap.exists()) {
+      const reason = banSnap.data().reason || "Violation of Terms";
+      throw new Error(`You are banned from posting. Reason: ${reason}`);
+  }
+
+  if (!link || !name || !description) {
+    const missing = [];
+    if (!link) missing.push(linkInput);
+    if (!name) missing.push(nameInput);
+    if (!description) missing.push(descInput);
+    
+    triggerShake(missing);
+    showToast("Please provide a link, display name, and description.", "error");
+    return;
+  }
+
+  // UI Loading State
+  const originalText = btn.innerText;
+  btn.classList.add('loading');
+  btn.disabled = true;
+
+  try {
+    // 0. AI Content Guard Check
+    const safetyCheck = AI_ContentGuard.analyze(description);
+    if (!safetyCheck.safe) {
+        throw new Error(`Security Alert: ${safetyCheck.reason}`);
+    }
+
+    // 1. Verify Link & Safety
+    link = await verifyUrl(link);
+
+    // Retrieve Metadata
+    let enrichedData = {};
+    if (linkInput.dataset.enrichedData) {
+        try {
+            enrichedData = JSON.parse(linkInput.dataset.enrichedData);
+        } catch (e) {
+            console.warn("Error parsing metadata", e);
+        }
+    }
+
+    // 2. Prepare Data
+    const report = {
+      url: link,
+      displayName: name,
+      description: description,
+      scamType: scamType,
+      imageExpected: null,
+      imageGot: null,
+      image: null, // Backward compatibility / Thumbnail
+      realName: enrichedData.realName || null,
+      platformImage: enrichedData.platformImage || null,
+      metaTitle: enrichedData.metaTitle || null,
+      metaDescription: enrichedData.metaDescription || null,
+      timestamp: Date.now(),
+      uid: user.uid,
+      userEmail: user.email,
+      reporterName: user.displayName || 'Anonymous',
+      reporterPhoto: user.photoURL || 'https://via.placeholder.com/150'
+    };
+
+    // 3. Handle Images
+    if (fileExpected && fileExpected.files[0]) report.imageExpected = await processImage(fileExpected.files[0]);
+    if (fileGot && fileGot.files[0]) report.imageGot = await processImage(fileGot.files[0]);
+    
+    // Set main image for feed (prioritize 'Expected' as it's usually the clean product shot, or 'Got' if that's all we have)
+    report.image = report.imageExpected || report.imageGot || null;
+
+    // 4. Save to Firebase
+    await addDoc(collection(db, "reports"), report);
+    showToast("Report submitted successfully!", "success");
+    document.getElementById('form-scam').reset();
+    
+    // Reset previews
+    document.querySelectorAll('.proof-preview').forEach(el => {
+        el.src = '';
+        el.classList.remove('visible');
+    });
+    document.getElementById('dynamic-proof-container').classList.add('hidden');
+
+    // Reset Description Field State
+    const descInput = document.getElementById('scammer-desc');
+    if (descInput) {
+        descInput.disabled = true;
+        descInput.placeholder = "Please select a scam type above first...";
+        descInput.style.opacity = "0.5";
+        descInput.style.cursor = "not-allowed";
+    }
+    
+    showPage('home');
+
+  } catch (e) {
+    console.error("Submission error: ", e);
+    showToast(e.message || "Error submitting report.", "error");
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('loading');
+    btn.innerText = originalText;
+  }
+}
+
+// --- TRUST SCORE HELPERS ---
+function calculateTrustScore(reports, ratings, verifiedUsers = new Set()) {
+  // Weighted Trust Algorithm: Trust = Positive / (Positive + Negative)
+  let posMass = 50; // Base inertia (Increased for stability)
+  let negMass = 50;
+  let consecutiveReports = 0;
+  const reportTimestamps = [];
+  let consecutivePositives = 0;
+  const positiveTimestamps = [];
+
+  const items = [
+    ...reports.map(r => ({...r, type: 'report'})),
+    ...ratings.map(r => ({...r, type: 'rating'}))
+  ].sort((a, b) => a.timestamp - b.timestamp);
+
+  items.forEach(item => {
+    const isVerified = verifiedUsers.has(item.uid);
+    const multiplier = isVerified ? 3 : 1; // Verified users have 3x impact
+
+    if (item.type === 'report') {
+      consecutivePositives = 0; // Reset positive streak
+      consecutiveReports++;
+      let penalty = 15; // Base Penalty (Reduced from 30)
+
+      // 1. Velocity Penalty: Higher if multiple reports in 24h
+      const oneDay = 24 * 60 * 60 * 1000;
+      const recentCount = reportTimestamps.filter(t => (item.timestamp - t) < oneDay).length;
+      penalty += (recentCount * 10);
+
+      // 2. Stacking Penalty: Higher if reports are consecutive
+      if (consecutiveReports > 1) {
+          penalty += (consecutiveReports - 1) * 10;
+      }
+
+      negMass += (penalty * multiplier);
+      reportTimestamps.push(item.timestamp);
+    } else if (item.type === 'rating') {
+      consecutiveReports = 0; // Reset report stack
+      const stars = parseInt(item.rating);
+      
+      if (stars >= 4) {
+          consecutivePositives++;
+          let reward = (stars === 5) ? 5 : 3;
+
+          // 1. Velocity Reward: Higher if multiple positive ratings in 24h
+          const oneDay = 24 * 60 * 60 * 1000;
+          const recentCount = positiveTimestamps.filter(t => (item.timestamp - t) < oneDay).length;
+          reward += (recentCount * 5);
+
+          // 2. Stacking Reward: Higher if ratings are consecutive
+          if (consecutivePositives > 1) {
+              reward += (consecutivePositives - 1) * 5;
+          }
+
+          // Cap max reward per rating to prevent abuse
+          if (reward > 55) reward = 55;
+
+          posMass += (reward * multiplier);
+          positiveTimestamps.push(item.timestamp);
+      } else {
+          consecutivePositives = 0;
+          if (stars === 3) posMass += (1 * multiplier); // Neutral/Okay is still proof of delivery
+          else if (stars === 2) negMass += (5 * multiplier);
+          else if (stars === 1) negMass += (10 * multiplier);
+      }
+    }
+  });
+  
+  const total = posMass + negMass;
+  return Math.round((posMass / total) * 100);
+}
+
+function getTrustStatus(score, reportCount = 0, ratingCount = 0) {
+    // Handle "New / Insufficient Data" case
+    // If no scam reports and score is in the neutral range (50-59), it means they have some positive ratings
+    // but not enough to break into "Low Risk" (60+), or just started.
+    if (reportCount === 0 && score >= 50 && score < 60) {
+        return { color: '#9ca3af', text: 'Not Enough Info' };
+    }
+    if (score >= 80) return { color: '#00e676', text: 'Trusted Business' };
+    if (score >= 60) return { color: '#2979ff', text: 'Low Risk' };
+    if (score >= 30) return { color: '#ffaa00', text: 'Potential Risk' };
+    return { color: '#ff3d00', text: 'High Risk' };
+}
+
+// PAGINATION STATE
+let allReportGroups = [];
+let currentReportLimit = 12;
+const REPORTS_PER_PAGE = 12;
+
+// Render Reports
+async function renderReports(searchQuery = "", sortType = "trending") {
+  const container = document.getElementById('local-reports-grid');
+  const loadMoreBtn = document.getElementById('reports-load-more-container');
+  if (!container) return;
+
+  container.innerHTML = getSkeletonHTML(4);
+  if (loadMoreBtn) loadMoreBtn.classList.add('hidden');
+
+  const q = query(collection(db, "reports"), orderBy("timestamp", "desc"));
+  const qRatings = query(collection(db, "ratings")); // Fetch ratings for accurate scoring
+  const qVerified = query(collection(db, "verified_users"));
+  
+  const [querySnapshot, ratingsSnapshot, verifiedSnapshot] = await Promise.all([getDocs(q), getDocs(qRatings), getDocs(qVerified)]);
+  const allRatings = [];
+  ratingsSnapshot.forEach(doc => allRatings.push(doc.data()));
+  
+  const verifiedUsers = new Set();
+  verifiedSnapshot.forEach(doc => verifiedUsers.add(doc.id));
+
+  const reports = [];
+  querySnapshot.forEach((doc) => {
+    const data = doc.data();
+    if (data.displayName) {
+      if (searchQuery) {
+        const tokens = searchQuery.toLowerCase().split(/\s+/);
+        const score = SearchSystem.score({
+            url: data.url ? data.url.toLowerCase() : '',
+            name: (data.displayName || '').toLowerCase(),
+            desc: (data.description || '').toLowerCase()
+        }, tokens);
+        if (score <= 0) return;
+        data._searchScore = score; // Store for sorting
+      }
+      reports.push(data);
+    }
+  });
+  
+  const emptyMsg = searchQuery ? "No results found for your search." : "No community reports found.";
+  
+  if (reports.length === 0) {
+      container.innerHTML = `<p style="opacity:0.6; text-align:center;">${emptyMsg}</p>`;
+      return;
+  }
+
+  // Group by URL to calculate "Known As"
+  const grouped = {};
+  reports.forEach(r => {
+    if (!r.url) return;
+    // Normalize URL slightly to group better
+    const key = r.url.toLowerCase().replace(/\/$/, ''); 
+    if (!grouped[key]) grouped[key] = { url: r.url, names: [], images: [], timestamps: [], reports: [] };
+    grouped[key].names.push(r.displayName);
+    grouped[key].reports.push(r);
+    if (r.image) grouped[key].images.push(r.image);
+    grouped[key].timestamps.push(r.timestamp || 0);
+  });
+
+  // Pre-calculate metrics for sorting
+  const groups = Object.values(grouped).map(group => {
+      const key = group.url.toLowerCase().replace(/\/$/, '');
+      const relatedRatings = allRatings.filter(r => r.url && r.url.toLowerCase().replace(/\/$/, '') === key);
+      const score = calculateTrustScore(group.reports, relatedRatings, verifiedUsers);
+      const latestTimestamp = Math.max(...group.timestamps);
+      
+      // Trending Metric
+      const cutoff = Date.now() - (49 * 24 * 60 * 60 * 1000);
+      const recentCount = group.timestamps.filter(t => t > cutoff).length;
+
+      // Calculate aggregate search relevance if searching
+      let relevance = 0;
+      if (searchQuery) {
+          // Use max score found in reports or re-score group
+          relevance = Math.max(...group.reports.map(r => r._searchScore || 0));
+          if (relevance === 0) {
+             // Fallback if group matched but individual report score wasn't captured (edge case)
+             relevance = 1; 
+          }
+      }
+
+      return { ...group, score, latestTimestamp, recentCount, relatedRatings, relevance };
+  });
+
+  // Apply Sort
+  groups.sort((a, b) => {
+      if (searchQuery && (a.relevance || b.relevance)) return b.relevance - a.relevance;
+      if (sortType === 'risk') return a.score - b.score; // Lower score = Higher Risk (Ascending)
+      if (sortType === 'recent') return b.latestTimestamp - a.latestTimestamp; // Newest first
+      return b.recentCount !== a.recentCount ? b.recentCount - a.recentCount : b.names.length - a.names.length; // Trending
+  });
+
+  // Store processed groups and render first batch
+  allReportGroups = groups;
+  currentReportLimit = REPORTS_PER_PAGE;
+  renderReportBatch(true);
+}
+
+function renderReportBatch(reset = false) {
+  const container = document.getElementById('local-reports-grid');
+  const loadMoreBtn = document.getElementById('reports-load-more-container');
+  
+  if (reset) container.innerHTML = '';
+
+  const start = reset ? 0 : container.children.length;
+  const end = currentReportLimit;
+  const batch = allReportGroups.slice(start, end);
+
+  batch.forEach(group => {
+    // Calculate most common name
+    const nameCounts = group.names.reduce((acc, name) => {
+      acc[name] = (acc[name] || 0) + 1;
+      return acc;
+    }, {});
+    const mostCommonName = Object.keys(nameCounts).reduce((a, b) => nameCounts[a] > nameCounts[b] ? a : b);
+    
+    // Check for Enriched Data (Real Name / Image)
+    let enrichedName = null;
+    let enrichedImage = null;
+    let metaTitle = null;
+    let metaDesc = null;
+
+    const sortedGroupReports = group.reports.sort((a,b) => b.timestamp - a.timestamp);
+    for (const r of sortedGroupReports) {
+        if (r.realName) { enrichedName = r.realName; break; }
+    }
+    for (const r of sortedGroupReports) {
+        if (r.platformImage) { enrichedImage = r.platformImage; break; }
+        if (r.metaTitle) { metaTitle = r.metaTitle; metaDesc = r.metaDescription; }
+    }
+
+    const finalDisplayName = escapeHTML(enrichedName || mostCommonName);
+
+    const platform = getPlatformInfo(group.url);
+    const originalIcon = platform.icon;
+    if (enrichedImage) {
+        platform.icon = `
+            <img src="${enrichedImage}" 
+                 style="width:100%; height:100%; object-fit:cover; border-radius:inherit; display:block;" 
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+            <div style="display:none; width:100%; height:100%; align-items:center; justify-content:center;">${originalIcon}</div>
+        `;
+    }
+
+    const username = extractUsername(group.url);
+    const displayImage = group.images.length > 0 ? group.images[group.images.length - 1] : null; // Use latest image
+    
+    // Calculate Dynamic Risk Status
+    // Use pre-calculated score and ratings
+    const status = getTrustStatus(group.score, group.reports.length, group.relatedRatings.length);
+
+    const card = document.createElement('div');
+
+    // --- LINK PREVIEW LAYOUT (If Metadata Exists) ---
+    if (metaTitle && (enrichedImage || metaDesc)) {
+        card.className = 'mini-card link-preview-card';
+        card.style.padding = '0';
+        card.style.overflow = 'hidden';
+        card.style.display = 'flex';
+        card.style.flexDirection = 'column';
+
+        let imgHtml = '';
+        if (enrichedImage) {
+            imgHtml = `<div style="width:100%; height:140px; overflow:hidden; background:#0d1117; position:relative; border-bottom:1px solid #30363d;">
+                        <img src="${enrichedImage}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.style.display='none'">
+                       </div>`;
+        }
+
+        card.innerHTML = `
+           ${imgHtml}
+           <div style="padding:12px; flex:1; display:flex; flex-direction:column;">
+               <div style="font-weight:bold; font-size:1em; margin-bottom:6px; line-height:1.3; color:#f0f6fc; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${escapeHTML(metaTitle)}</div>
+               ${metaDesc ? `<div style="font-size:0.85em; color:#8b949e; margin-bottom:10px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">${escapeHTML(metaDesc)}</div>` : ''}
+               
+               <div style="margin-top:auto; display:flex; align-items:center; justify-content:space-between;">
+                   <div style="display:flex; align-items:center; gap:6px; font-size:0.75em; color:#8b949e;">
+                       <div style="width:16px; height:16px;">${platform.icon}</div>
+                       <span style="max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${platform.name}</span>
+                   </div>
+                   <div style="display:flex; align-items:center; gap:8px;">
+                       <button onclick="event.stopPropagation(); shareItem('${escapeHTML(group.url)}', '${escapeHTML(finalDisplayName)}', '${status.text}')" style="background:none; border:none; color:#8b949e; cursor:pointer; padding:0;" title="Share">
+                           <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+                       </button>
+                       <div class="warning-label" style="color:${status.color}; font-size:0.75em; padding:2px 6px; margin:0;">
+                           ${status.text}
+                       </div>
+                   </div>
+               </div>
+           </div>
+        `;
+    } else 
+    if (platform.type === 'phone') {
+        const flagDisplay = platform.flagImg 
+            ? `<img src="${platform.flagImg}" style="width:18px; height:13px; object-fit:cover; border-radius:2px; display:inline-block; vertical-align:middle; margin-right:6px;">` 
+            : platform.flag + ' ';
+
+        // --- PHONE LAYOUT ---
+        card.className = 'mini-card phone-card';
+        card.innerHTML = `
+          <div class="card-header" style="align-items:flex-start; justify-content:space-between;">
+            <div style="display:flex; align-items:flex-start;">
+                <div style="width:40px; height:40px; margin-right:10px; flex-shrink:0;">${platform.icon}</div>
+                <div>
+                      <div class="phone-number">${escapeHTML(username)}</div>
+                    <div class="location-badge">${flagDisplay}${platform.name}</div>
+                </div>
+            </div>
+            <button onclick="event.stopPropagation(); shareItem('${escapeHTML(group.url)}', '${escapeHTML(username)}', '${status.text}')" style="background:none; border:none; color:#8b949e; cursor:pointer; padding:4px;" title="Share">
+                <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor;"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+            </button>
+          </div>
+            <div class="known-as" style="margin-top:5px;">Reported as: <strong style="color:#f0f6fc;">${escapeHTML(mostCommonName)}</strong></div>
+          <div class="warning-label" style="color:${status.color}; margin-top:auto;">
+            <span style="width:8px; height:8px; background:${status.color}; border-radius:50%; display:inline-block; margin-right:6px; box-shadow:0 0 5px ${status.color};"></span>
+            ${status.text}
+          </div>
+        `;
+    } else {
+        // --- STANDARD LAYOUT ---
+        card.className = 'mini-card';
+        card.innerHTML = `
+          <div class="card-header">
+            <div class="platform-icon" style="background:${platform.color}">${platform.icon}</div>
+            <div class="card-user">${finalDisplayName}</div>
+          </div>
+          <div class="known-as">Profile: <strong>${escapeHTML(username)}</strong> (${group.names.length} reports)</div>
+          ${displayImage ? `<img src="${displayImage}">` : ''}
+          <div class="warning-label" style="color:${status.color}">
+            <span style="width:8px; height:8px; background:${status.color}; border-radius:50%; display:inline-block; margin-right:6px; box-shadow:0 0 5px ${status.color};"></span>
+            ${status.text}
+          </div>
+          <div style="display:flex; gap:10px; margin-top:10px;">
+            <a href="${group.url.startsWith('http') ? group.url : 'https://' + group.url}" onclick="interceptLink(event, this.href, '${status.text}')" class="visit-btn" style="flex:1; margin-top:0;">Visit Profile ↗</a>
+            <button onclick="event.stopPropagation(); shareItem('${escapeHTML(group.url)}', '${escapeHTML(finalDisplayName)}', '${status.text}')" class="visit-btn" style="width:auto; margin-top:0; padding:0 16px; display:flex; align-items:center; justify-content:center;" title="Share">
+                <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor;"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+            </button>
+          </div>
+        `;
+    }
+    
+    card.onclick = (e) => {
+      if (e.target.tagName === 'A') return; // Allow clicking the link without opening details
+      window.lastClickedGridItem = card; // Track item immediately
+      window.lastGridScrollY = window.scrollY; // Save exact scroll position
+      openDetails(group.url, 'reports');
+    };
+    container.appendChild(card);
+    
+    // Masonry Resize Logic
+    const img = card.querySelector('img');
+    if (img) {
+        if (img.complete) resizeGridItem(card);
+        else img.onload = () => resizeGridItem(card);
+    }
+    resizeGridItem(card);
+  });
+
+  // Handle Load More Button Visibility
+  if (loadMoreBtn) {
+      if (currentReportLimit >= allReportGroups.length) {
+          loadMoreBtn.classList.add('hidden');
+      } else {
+          loadMoreBtn.classList.remove('hidden');
+      }
+  }
+
+  setTimeout(resizeAllGridItems, 100);
+}
+
+async function loadMoreReports() {
+  const btnContainer = document.getElementById('reports-load-more-container');
+  const btn = btnContainer ? btnContainer.querySelector('button') : null;
+  const grid = document.getElementById('local-reports-grid');
+  
+  if (btn) {
+    btn.innerText = "Loading...";
+    btn.disabled = true;
+    btn.style.opacity = "0.7";
+  }
+
+  const temp = document.createElement('div');
+  temp.innerHTML = getSkeletonHTML(4);
+  const skeletons = Array.from(temp.children);
+  skeletons.forEach(s => grid.appendChild(s));
+
+  await new Promise(r => setTimeout(r, 800));
+
+  skeletons.forEach(s => s.remove());
+
+  currentReportLimit += REPORTS_PER_PAGE;
+  renderReportBatch(false);
+  
+  if (btn) {
+    btn.innerText = "Load More";
+    btn.disabled = false;
+    btn.style.opacity = "1";
+  }
+}
+window.loadMoreReports = loadMoreReports;
+
+async function renderRatings(searchQuery = "", sortType = "trending") {
+  const container = document.getElementById('local-ratings-grid');
+  if (!container) return;
+
+  container.innerHTML = getSkeletonHTML(4);
+
+  const q = query(collection(db, "ratings"), orderBy("timestamp", "desc"));
+  const qReports = query(collection(db, "reports")); // Fetch reports for accurate scoring
+  const qVerified = query(collection(db, "verified_users"));
+  
+  const [querySnapshot, reportsSnapshot, verifiedSnapshot] = await Promise.all([getDocs(q), getDocs(qReports), getDocs(qVerified)]);
+  const allReports = [];
+  reportsSnapshot.forEach(doc => allReports.push(doc.data()));
+
+  const verifiedUsers = new Set();
+  verifiedSnapshot.forEach(doc => verifiedUsers.add(doc.id));
+
+  const ratings = [];
+  querySnapshot.forEach((doc) => {
+    const data = doc.data();
+    if (data.rating) {
+      if (searchQuery) {
+        const tokens = searchQuery.toLowerCase().split(/\s+/);
+        const score = SearchSystem.score({
+            url: data.url ? data.url.toLowerCase() : '',
+            name: (data.realName || '').toLowerCase(),
+            desc: (data.good || data.bad || '').toLowerCase()
+        }, tokens);
+        if (score <= 0) return;
+        data._searchScore = score;
+      }
+      ratings.push(data);
+    }
+  });
+  
+  const emptyMsg = searchQuery ? "No results found for your search." : "No seller ratings found.";
+  container.innerHTML = ratings.length ? '' : `<p style="opacity:0.6; text-align:center;">${emptyMsg}</p>`;
+
+  // Group ratings by URL
+  const grouped = {};
+  ratings.forEach(r => {
+      if (!r.url) return;
+      const key = r.url.toLowerCase().replace(/\/$/, '');
+      if (!grouped[key]) {
+          grouped[key] = { url: r.url, ratings: [], goods: [], bads: [], timestamps: [], rawRatings: [] };
+      }
+      grouped[key].ratings.push(parseInt(r.rating));
+      if (r.good) grouped[key].goods.push(r.good);
+      if (r.bad) grouped[key].bads.push(r.bad);
+      grouped[key].rawRatings.push(r);
+      grouped[key].timestamps.push(r.timestamp || 0);
+  });
+
+  // Pre-calculate metrics
+  const groups = Object.values(grouped).map(group => {
+      const key = group.url.toLowerCase().replace(/\/$/, '');
+      const relatedReports = allReports.filter(r => r.url && r.url.toLowerCase().replace(/\/$/, '') === key);
+      const score = calculateTrustScore(relatedReports, group.rawRatings, verifiedUsers);
+      const latestTimestamp = Math.max(...group.timestamps);
+      
+      // Trending Metric
+      const cutoff = Date.now() - (49 * 24 * 60 * 60 * 1000);
+      const recentCount = group.timestamps.filter(t => t > cutoff).length;
+
+      let relevance = 0;
+      if (searchQuery) {
+          relevance = Math.max(...group.rawRatings.map(r => r._searchScore || 0));
+      }
+
+      return { ...group, score, latestTimestamp, recentCount, relatedReports, relevance };
+  });
+
+  // Apply Sort
+  groups.sort((a, b) => {
+      if (searchQuery && (a.relevance || b.relevance)) return b.relevance - a.relevance;
+      if (sortType === 'risk') return a.score - b.score; // Lower score = Higher Risk
+      if (sortType === 'recent') return b.latestTimestamp - a.latestTimestamp;
+      return b.recentCount !== a.recentCount ? b.recentCount - a.recentCount : b.ratings.length - a.ratings.length;
+  });
+
+  groups.forEach(group => {
+      const avgRating = group.ratings.reduce((a, b) => a + b, 0) / group.ratings.length;
+      const stars = '★'.repeat(Math.round(avgRating)) + '☆'.repeat(5 - Math.round(avgRating));
+      const platform = getPlatformInfo(group.url);
+      const username = extractUsername(group.url);
+
+      // Check for Enriched Data
+      let enrichedName = null;
+      let enrichedImage = null;
+      let metaTitle = null;
+      let metaDesc = null;
+
+      const sortedGroupRatings = group.rawRatings.sort((a,b) => b.timestamp - a.timestamp);
+      for (const r of sortedGroupRatings) {
+          if (r.realName) { enrichedName = r.realName; break; }
+      }
+      for (const r of sortedGroupRatings) {
+          if (r.platformImage) { enrichedImage = r.platformImage; break; }
+          if (r.metaTitle) { metaTitle = r.metaTitle; metaDesc = r.metaDescription; }
+      }
+      const originalIcon = platform.icon;
+      if (enrichedImage) {
+          platform.icon = `
+            <img src="${enrichedImage}" 
+                 style="width:100%; height:100%; object-fit:cover; border-radius:inherit; display:block;" 
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+            <div style="display:none; width:100%; height:100%; align-items:center; justify-content:center;">${originalIcon}</div>
+          `;
+      }
+      const displayTitle = escapeHTML(enrichedName || username);
+
+      // Calculate Dynamic Risk Status
+      const status = getTrustStatus(group.score, group.relatedReports.length, group.rawRatings.length);
+
+      const card = document.createElement('div');
+
+      // --- LINK PREVIEW LAYOUT ---
+      if (metaTitle && (enrichedImage || metaDesc)) {
+          card.className = 'mini-card link-preview-card';
+          card.style.padding = '0';
+          card.style.overflow = 'hidden';
+          card.style.display = 'flex';
+          card.style.flexDirection = 'column';
+
+          let imgHtml = '';
+          if (enrichedImage) {
+              imgHtml = `<div style="width:100%; height:140px; overflow:hidden; background:#0d1117; position:relative; border-bottom:1px solid #30363d;">
+                          <img src="${enrichedImage}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.style.display='none'">
+                         </div>`;
+          }
+
+          card.innerHTML = `
+             ${imgHtml}
+             <div style="padding:12px; flex:1; display:flex; flex-direction:column;">
+                 <div style="font-weight:bold; font-size:1em; margin-bottom:6px; line-height:1.3; color:#f0f6fc; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${escapeHTML(metaTitle)}</div>
+                 <div style="font-size: 1.1em; color: #ffaa00; margin-bottom:8px;">${stars}</div>
+                 
+                 <div style="margin-top:auto; display:flex; align-items:center; justify-content:space-between;">
+                     <div style="display:flex; align-items:center; gap:6px; font-size:0.75em; color:#8b949e;">
+                         <div style="width:16px; height:16px;">${platform.icon}</div>
+                         <span style="max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${platform.name}</span>
+                     </div>
+                     <div class="warning-label" style="color:${status.color}; font-size:0.75em; padding:2px 6px; margin:0;">
+                         ${status.text}
+                     </div>
+                 </div>
+             </div>
+          `;
+      } else 
+      if (platform.type === 'phone') {
+          const flagDisplay = platform.flagImg 
+            ? `<img src="${platform.flagImg}" style="width:18px; height:13px; object-fit:cover; border-radius:2px; display:inline-block; vertical-align:middle; margin-right:6px;">` 
+            : platform.flag + ' ';
+
+          card.className = 'mini-card phone-card';
+          card.innerHTML = `
+              <div class="card-header" style="align-items:flex-start;">
+                  <div style="width:40px; height:40px; margin-right:10px; flex-shrink:0;">${platform.icon}</div>
+                  <div>
+                      <div class="phone-number">${escapeHTML(username)}</div>
+                      <div class="location-badge">${flagDisplay}${platform.name}</div>
+                  </div>
+              </div>
+              <div class="known-as" style="font-size: 1.2em; color: #ffaa00; margin-top:10px;">${stars}</div>
+              <div class="warning-label" style="color:${status.color}; margin-top:auto;">
+                <span style="width:8px; height:8px; background:${status.color}; border-radius:50%; display:inline-block; margin-right:6px; box-shadow:0 0 5px ${status.color};"></span>
+                ${status.text}
+              </div>
+          `;
+      } else {
+          card.className = 'mini-card';
+          card.innerHTML = `
+              <div class="card-header">
+                  <div class="platform-icon" style="background:${platform.color}">${platform.icon}</div>
+                  <div class="card-user">${displayTitle}</div>
+              </div>
+              <div class="known-as" style="font-size: 1.2em; color: #ffaa00;">${stars} <span style="font-size: 0.7em; color: #8b949e;">(${avgRating.toFixed(1)} avg. from ${group.ratings.length} ratings)</span></div>
+              <div class="warning-label" style="color:${status.color}; margin-top:8px;">
+                <span style="width:8px; height:8px; background:${status.color}; border-radius:50%; display:inline-block; margin-right:6px; box-shadow:0 0 5px ${status.color};"></span>
+                ${status.text}
+              </div>
+              <a href="${group.url.startsWith('http') ? group.url : 'https://' + group.url}" onclick="interceptLink(event, this.href, '${status.text}')" class="visit-btn">Visit Profile ↗</a>
+          `;
+      }
+
+      card.onclick = (e) => {
+        if (e.target.tagName === 'A') return;
+        window.lastClickedGridItem = card; // Track item immediately
+        window.lastGridScrollY = window.scrollY; // Save exact scroll position
+        openDetails(group.url, 'ratings');
+      };
+      container.appendChild(card);
+      
+      // Masonry Resize Logic
+      const img = card.querySelector('img');
+      if (img) {
+          if (img.complete) resizeGridItem(card);
+          else img.onload = () => resizeGridItem(card);
+      }
+      resizeGridItem(card);
+  });
+  setTimeout(resizeAllGridItems, 100);
+}
+
+/* ==========================================
+   DETAILS VIEW LOGIC
+   ========================================== */
+
+async function openDetails(url, type, highlightId = null) {
+  // Capture current page state before opening details
+  const pages = ['home', 'login', 'admin-dashboard'];
+  let activeId = 'home';
+  for (const id of pages) {
+      const el = document.getElementById(id);
+      if (el && !el.classList.contains('hidden')) {
+          activeId = id;
+          break;
+      }
+  }
+  window.lastActivePage = activeId;
+  
+  // Capture Tab State for Login/Profile Section
+  if (window.lastActivePage === 'login') {
+      const activitySection = document.getElementById('user-activity-section');
+      // Check if activity section is visible
+      if (activitySection && !activitySection.classList.contains('hidden')) {
+          window.lastProfileTab = 'activity';
+          
+          // Capture Activity Sub-tab
+          const reportsGrid = document.getElementById('activity-reports');
+          if (reportsGrid && !reportsGrid.classList.contains('hidden')) {
+              window.lastActivitySubTab = 'reports';
+          } else {
+              window.lastActivitySubTab = 'ratings';
+          }
+      } else {
+          window.lastProfileTab = 'profile';
+      }
+  }
+
+  const detailsView = document.getElementById('details-view');
+  const card = window.lastClickedGridItem;
+  
+  window.lastDetailsArgs = { url, type, highlightId }; // Store for refreshing
+
+  // Create or get a transition container for the card clone
+  let cloneContainer = document.getElementById('card-clone-container');
+  if (!cloneContainer && detailsView) {
+      cloneContainer = document.createElement('div');
+      cloneContainer.id = 'card-clone-container';
+      // Apply mini-card class to inherit styles, but override layout for fullscreen
+      cloneContainer.className = 'mini-card'; 
+      Object.assign(cloneContainer.style, {
+          position: 'absolute',
+          top: '0',
+          left: '0',
+          width: '100%',
+          height: '100%',
+          margin: '0',
+          borderRadius: 'inherit',
+          zIndex: '1',
+          pointerEvents: 'none',
+          display: 'flex',
+          flexDirection: 'column'
+      });
+      detailsView.appendChild(cloneContainer);
+  }
+  
+  const contentContainer = detailsView ? detailsView.querySelector('.content-container') : null;
+
+  // Animation Logic
+  if (card && detailsView) {
+      const rect = card.getBoundingClientRect();
+      window.lastGridItemRect = rect; // Store exact position for closing animation
+      
+      // 1. Setup Clone (The "Real" Grid Item Look)
+      if (cloneContainer) {
+          cloneContainer.innerHTML = card.innerHTML;
+          cloneContainer.style.opacity = '1';
+          cloneContainer.style.display = 'flex';
+          
+          // Fade out text elements to prevent glitchy reflow
+          requestAnimationFrame(() => {
+              Array.from(cloneContainer.children).forEach(child => {
+                  if (child.tagName !== 'IMG') {
+                      child.style.transition = 'opacity 0.2s ease';
+                      child.style.opacity = '0';
+                  }
+              });
+          });
+      }
+      
+      // 2. Prepare Details View
+      detailsView.classList.remove('hidden');
+      
+      // Hide actual content initially so we see the clone expanding
+      if (contentContainer) {
+          contentContainer.style.opacity = '0';
+          contentContainer.style.position = 'relative';
+          contentContainer.style.zIndex = '2'; // Ensure content sits above clone
+      }
+
+      Object.assign(detailsView.style, {
+          position: 'fixed',
+          top: `${rect.top}px`,
+          left: `${rect.left}px`,
+          width: `${rect.width}px`,
+          height: `${rect.height}px`,
+          borderRadius: getComputedStyle(card).borderRadius,
+          overflow: 'hidden',
+          opacity: '1',
+          transform: 'translateZ(0)', // Hardware acceleration
+          transition: 'none',
+          zIndex: '9999',
+          backgroundColor: '#161b22' // Match card background color
+      });
+
+      // 3. Force Reflow
+      void detailsView.offsetWidth;
+
+      // 4. Animate to Full Screen
+      requestAnimationFrame(() => {
+          Object.assign(detailsView.style, {
+              transition: 'all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)',
+              top: '0',
+              left: '0',
+              width: '100%',
+              height: '100%',
+              borderRadius: '0'
+          });
+      });
+
+      // 5. Crossfade & Load Content
+      setTimeout(() => {
+          populateDetailsView(url, type, highlightId);
+          
+          // Fade in real content
+          if (contentContainer) {
+              contentContainer.style.transition = 'opacity 0.4s ease';
+              contentContainer.style.opacity = '1';
+          }
+          // Fade out clone
+          if (cloneContainer) {
+              cloneContainer.style.transition = 'opacity 0.4s ease';
+              cloneContainer.style.opacity = '0';
+          }
+      }, 300); // Start fading in halfway through
+
+      // 6. Cleanup after animation
+      setTimeout(() => {
+          showPage('details-view');
+          detailsView.style = ''; // Reset inline styles
+          if (contentContainer) {
+              contentContainer.style.opacity = '';
+              contentContainer.style.transition = '';
+          }
+          if (cloneContainer) cloneContainer.style.display = 'none';
+      }, 600);
+  } else {
+      showPage('details-view');
+      populateDetailsView(url, type, highlightId);
+  }
+
+  // Logic moved inside animation flow
+}
+
+async function populateDetailsView(url, type, highlightId = null) {
+  const container = document.getElementById('details-list');
+  const title = document.getElementById('details-title');
+  
+  // Show Skeleton for Details
+  container.innerHTML = getSkeletonHTML(1) + `
+    <div class="review-card">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
+        <div class="skeleton" style="width:40px; height:40px; border-radius:50%;"></div>
+        <div class="skeleton" style="width:150px; height:20px;"></div>
+      </div>
+      <div class="skeleton" style="width:100%; height:80px;"></div>
+    </div>
+  `;
+
+  title.innerText = 'Seller Analysis';
+
+  const targetKey = url.toLowerCase().replace(/\/$/, '');
+
+  try {
+    // Fetch BOTH reports and ratings to build a full history
+    const qReports = query(collection(db, "reports"), orderBy("timestamp", "asc"));
+    const qRatings = query(collection(db, "ratings"), orderBy("timestamp", "asc"));
+    
+    const [reportsSnap, ratingsSnap] = await Promise.all([getDocs(qReports), getDocs(qRatings)]);
+    
+    const items = [];
+    
+    reportsSnap.forEach((doc) => {
+      const data = doc.data();
+      if (data.url && data.url.toLowerCase().replace(/\/$/, '') === targetKey) {
+        items.push({ ...data, type: 'report', id: doc.id });
+      }
+    });
+
+    ratingsSnap.forEach((doc) => {
+      const data = doc.data();
+      if (data.url && data.url.toLowerCase().replace(/\/$/, '') === targetKey) {
+        items.push({ ...data, type: 'rating', id: doc.id });
+      }
+    });
+
+    // Sort combined items by timestamp (oldest first for calculation, then we reverse for display)
+    items.sort((a, b) => a.timestamp - b.timestamp);
+
+    if (items.length === 0) {
+      container.innerHTML = '<p style="text-align:center;">No details found.</p>';
+      return;
+    }
+
+    // --- FETCH VERIFIED & BANNED USERS ---
+    const uniqueUids = [...new Set(items.map(i => i.uid))];
+    const verifiedUsers = new Set();
+    const bannedUsers = new Set();
+    
+    await Promise.all(uniqueUids.map(async (uid) => {
+        try {
+            const snap = await getDoc(doc(db, "verified_users", uid));
+            if (snap.exists()) verifiedUsers.add(uid);
+            
+            const banSnap = await getDoc(doc(db, "banned_users", uid));
+            if (banSnap.exists()) bannedUsers.add(uid);
+        } catch (e) { console.warn("Verification fetch failed", e); }
+    }));
+
+    // --- INTELLIGENT TRUST ALGORITHM ---
+    let posMass = 50;
+    let negMass = 50;
+    const historyPoints = [];
+    let reportCount = 0;
+    let ratingCount = 0;
+    let consecutiveReports = 0;
+    const reportTimestamps = [];
+    let consecutivePositives = 0;
+    const positiveTimestamps = [];
+
+    items.forEach(item => {
+      const isVerified = verifiedUsers.has(item.uid);
+      const multiplier = isVerified ? 3 : 1;
+
+      if (item.type === 'report') {
+        consecutivePositives = 0;
+        reportCount++;
+        consecutiveReports++;
+        
+        let penalty = 15; // Base
+        
+        // Velocity Check
+        const oneDay = 24 * 60 * 60 * 1000;
+        const recentCount = reportTimestamps.filter(t => (item.timestamp - t) < oneDay).length;
+        penalty += (recentCount * 10);
+
+        // Stacking Check
+        if (consecutiveReports > 1) {
+            penalty += (consecutiveReports - 1) * 10;
+        }
+
+        negMass += (penalty * multiplier);
+        reportTimestamps.push(item.timestamp);
+        
+        // Attach dynamic impact for display
+        item.dynamicImpact = `Critical (-${penalty * multiplier})`;
+
+      } else if (item.type === 'rating') {
+        ratingCount++;
+        consecutiveReports = 0;
+        const stars = parseInt(item.rating);
+        
+        if (stars >= 4) {
+            consecutivePositives++;
+            let reward = (stars === 5) ? 5 : 3;
+            
+            // Velocity
+            const oneDay = 24 * 60 * 60 * 1000;
+            const recentCount = positiveTimestamps.filter(t => (item.timestamp - t) < oneDay).length;
+            reward += (recentCount * 5);
+
+            // Stacking
+            if (consecutivePositives > 1) {
+                reward += (consecutivePositives - 1) * 5;
+            }
+            
+            // Cap max reward per rating to prevent abuse
+            if (reward > 55) reward = 55;
+            
+            posMass += (reward * multiplier);
+            positiveTimestamps.push(item.timestamp);
+            
+            const baseText = (stars === 5) ? 'Strong' : 'Good';
+            item.dynamicImpact = `${baseText} (+${reward * multiplier})`;
+        } else {
+            consecutivePositives = 0;
+            if (stars === 3) { posMass += (1 * multiplier); item.dynamicImpact = `Neutral (+${1 * multiplier})`; }
+            else if (stars === 2) { negMass += (5 * multiplier); item.dynamicImpact = `Poor (-${5 * multiplier})`; }
+            else if (stars === 1) { negMass += (10 * multiplier); item.dynamicImpact = `Bad (-${10 * multiplier})`; }
+        }
+      }
+      
+      const total = posMass + negMass;
+      const score = Math.round((posMass / total) * 100);
+      historyPoints.push({ date: item.timestamp, score: score });
+    });
+
+    const currentScore = historyPoints.length > 0 ? historyPoints[historyPoints.length - 1].score : 50;
+
+    // Check for Verified Status (High Trust > 3 Months)
+    let isVerified = false;
+    const threeMonths = 90 * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    
+    if (historyPoints.length > 0) {
+        const cutoff = now - threeMonths;
+        const pointsBefore = historyPoints.filter(p => p.date < cutoff);
+        const pointsAfter = historyPoints.filter(p => p.date >= cutoff);
+        
+        if (pointsBefore.length > 0) {
+             const lastScoreBefore = pointsBefore[pointsBefore.length - 1].score;
+             // Must have entered the window with high score and maintained it
+             if (lastScoreBefore >= 80) {
+                 const hasDip = pointsAfter.some(p => p.score < 80);
+                 if (!hasDip && currentScore >= 80) {
+                     isVerified = true;
+                 }
+             }
+        }
+    }
+
+    // Determine Status Color
+    const status = getTrustStatus(currentScore, reportCount, ratingCount);
+    const statusColor = status.color;
+    const statusText = status.text;
+
+    container.innerHTML = '';
+    
+    // Render Header Info
+    const username = extractUsername(url);
+    const platform = getPlatformInfo(url);
+
+    // Check for Enriched Data (Real Name / Image)
+    let enrichedName = null;
+    let enrichedImage = null;
+    // Items are sorted old -> new. Iterate backwards to find latest info.
+    for (let i = items.length - 1; i >= 0; i--) {
+        if (items[i].realName && !enrichedName) enrichedName = items[i].realName;
+        if (items[i].platformImage && !enrichedImage) enrichedImage = items[i].platformImage;
+        if (enrichedName && enrichedImage) break;
+    }
+
+    const displayTitle = escapeHTML(enrichedName || username);
+    const originalIcon = platform.icon;
+    if (enrichedImage) {
+        platform.icon = `
+            <img src="${enrichedImage}" 
+                 style="width:100%; height:100%; object-fit:cover; border-radius:inherit; display:block;" 
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+            <div style="display:none; width:100%; height:100%; align-items:center; justify-content:center;">${originalIcon}</div>
+        `;
+    }
+    
+    // Ensure URL has protocol
+    let displayUrl = url;
+    const isPhone = /^[\+]?[\d\s\-\(\)]{7,}$/.test(url) && !/[a-z]/i.test(url);
+    
+    if (isPhone) {
+        displayUrl = 'tel:' + url;
+    } else if (!/^https?:\/\//i.test(displayUrl)) {
+        displayUrl = 'https://' + displayUrl;
+    }
+    
+    let verifiedBadge = '';
+    if (isVerified) {
+        verifiedBadge = `
+            <div class="verified-badge-container" title="Verified: High trust maintained for 3+ months">
+                <div class="verified-badge-icon">
+                    <svg viewBox="0 0 24 24" style="width:14px; height:14px; fill:#0d1117;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                </div>
+                <div class="verified-dust" style="--dx: 12px; --dy: -12px; animation-delay: 0s;"></div>
+                <div class="verified-dust" style="--dx: -10px; --dy: -14px; animation-delay: 0.4s;"></div>
+                <div class="verified-dust" style="--dx: 14px; --dy: 8px; animation-delay: 0.8s;"></div>
+                <div class="verified-dust" style="--dx: -12px; --dy: 10px; animation-delay: 1.2s;"></div>
+                <div class="verified-dust" style="--dx: 0px; --dy: -18px; animation-delay: 1.6s;"></div>
+            </div>
+        `;
+    }
+
+    container.innerHTML += `
+      <div style="text-align:center; margin-bottom:24px;">
+        <a href="${displayUrl}" ${isPhone ? '' : `onclick="interceptLink(event, this.href, '${statusText}')"`} style="display:inline-flex; align-items:center; gap:12px; text-decoration:none; color:${isVerified ? '#ffd700' : '#eaeaea'}; font-size:1.6rem; font-weight:bold; transition: opacity 0.2s;">
+          <div class="platform-icon" style="background:${platform.color}; width:48px; height:48px; font-size:24px; display:flex; align-items:center; justify-content:center;">${platform.icon}</div>
+          <span>${displayTitle}</span>
+          ${verifiedBadge}
+          <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:#38bdf8; opacity:0.8;"><path d="M18 13v6c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V8c0-1.1.9-2 2-2h6v2H5v11h11v-6h2zm-1.5-9H11v2h3.59l-4.83 4.83 1.41 1.41L16 7.41V11h2V4z"/></svg>
+        </a>
+        <div style="font-size:0.9rem; color:#8b949e; margin-top:8px;">${platform.name}</div>
+        <div style="margin-top:16px; display:flex; gap:10px; justify-content:center;">
+             <button onclick="rateLinkFromModal(decodeURIComponent(&quot;${encodeURIComponent(url)}&quot;))" style="background:rgba(255, 170, 0, 0.1); border:1px solid rgba(255, 170, 0, 0.3); color:#ffaa00; padding:8px 20px; border-radius:50px; font-size:0.9rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:8px; transition:all 0.2s;">
+                <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor; transform:translateY(-1px);"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                Rate User
+            </button>
+             <button onclick="reportLinkFromModal(decodeURIComponent(&quot;${encodeURIComponent(url)}&quot;))" style="background:rgba(255, 77, 77, 0.1); border:1px solid rgba(255, 77, 77, 0.3); color:#ff4d4d; padding:8px 20px; border-radius:50px; font-size:0.9rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:8px; transition:all 0.2s;">
+                <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M15.73 3H8.27L3 8.27v7.46L8.27 21h7.46L21 15.73V8.27L15.73 3zM12 17.3c-.72 0-1.3-.58-1.3-1.3 0-.72.58-1.3 1.3-1.3.72 0 1.3.58 1.3 1.3 0 .72-.58 1.3-1.3 1.3zm1-4.3h-2V7h2v6z"/></svg>
+                Report User
+            </button>
+        </div>
+      </div>
+    `;
+    
+    // Render Trust Chart & Stats
+    const chartSVG = generateTrustChart(historyPoints, statusColor);
+    const historyLogHTML = generateHistoryLogHTML(items);
+    const aiSummary = generateAISummary(items, verifiedUsers);
+    
+    container.innerHTML += `
+      <div class="trust-score-container">
+        <div class="trust-stats">
+          <div class="stat-item">
+            <div class="stat-value" style="color:${statusColor}">${currentScore}</div>
+            <div class="stat-label">Trust Score</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">${reportCount}</div>
+            <div class="stat-label">Reports</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">${ratingCount}</div>
+            <div class="stat-label">Ratings</div>
+          </div>
+        </div>
+        <div class="chart-wrapper">
+          ${chartSVG}
+        </div>
+        
+        <div class="ai-summary-box">
+            <h3 style="margin: 0 0 8px 0; font-size: 0.95rem; color: #8b5cf6; display: flex; align-items: center; gap: 8px;">
+               <svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:currentColor;"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/><path d="M11.25 5h1.5v4.25L16 8l-2.25 4.5h-2.5L13.5 8 11.25 5z"/></svg> AI Review Summary
+            </h3>
+            <p style="margin: 0; font-size: 0.9rem; line-height: 1.5; color: #b0b8c3;">${aiSummary}</p>
+        </div>
+
+        <div style="display:flex; justify-content:center; margin-top:15px;">
+            <span style="background:${statusColor}22; color:${statusColor}; padding:6px 16px; border-radius:50px; border:1px solid ${statusColor}44; font-weight:bold; font-size:0.9em; display:flex; align-items:center; gap:6px;">
+                <span style="width:8px; height:8px; border-radius:50%; background:${statusColor}; box-shadow:0 0 8px ${statusColor};"></span>
+                ${statusText}
+            </span>
+        </div>
+        
+        <button id="expand-history-btn" class="expand-history-btn" onclick="toggleHistoryLog()">View Full History</button>
+        <div id="history-log-container" class="hidden history-log">
+           ${historyLogHTML}
+        </div>
+      </div>
+    `;
+
+    // Render List (Admin First, then Newest)
+    items.sort((a, b) => {
+        const aIsAdmin = a.uid === ADMIN_UID;
+        const bIsAdmin = b.uid === ADMIN_UID;
+        
+        if (aIsAdmin && !bIsAdmin) return -1;
+        if (!aIsAdmin && bIsAdmin) return 1;
+        return b.timestamp - a.timestamp;
+    });
+
+    items.forEach(item => {
+      const date = new Date(item.timestamp).toLocaleDateString();
+      
+      // Fallback for old data: Use email username if reporterName is missing
+      let rName = item.reporterName;
+      if (!rName && item.userEmail) {
+        rName = item.userEmail.split('@')[0];
+      }
+      rName = rName || 'Anonymous';
+
+      const rPhoto = item.reporterPhoto || 'https://via.placeholder.com/40';
+      const isAdmin = item.uid === ADMIN_UID;
+      const isVerifiedUser = verifiedUsers.has(item.uid);
+      const isBanned = bannedUsers.has(item.uid);
+      
+      // Admin Controls (Only visible to you)
+      const currentUser = auth.currentUser;
+      const showAdminControls = currentUser && currentUser.uid === ADMIN_UID;
+      
+      // Escape name for onclick
+      const safeName = escapeHTML(rName).replace(/'/g, "\\'");
+      
+      const userHtml = `
+        <div style="display:flex; align-items:center; gap:10px;">
+          <img src="${rPhoto}" alt="${escapeHTML(rName)}" style="width:32px; height:32px; border-radius:50%; object-fit:cover;">
+          <span style="color:${isVerifiedUser ? '#ffd700' : '#eaeaea'}; font-weight:bold;">${escapeHTML(rName)}</span>
+          ${isBanned ? '<span style="color:#ff4d4d; font-size:0.8em; font-weight:bold; border:1px solid #ff4d4d; padding:0 4px; border-radius:4px;">BANNED</span>' : ''}
+          ${isVerifiedUser ? `
+            <div class="verified-badge-container small" title="Verified Community Member">
+                <div class="verified-badge-icon">
+                    <svg viewBox="0 0 24 24" style="width:10px; height:10px; fill:#0d1117;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                </div>
+                <div class="verified-dust" style="--dx: 8px; --dy: -8px; animation-delay: 0s;"></div>
+                <div class="verified-dust" style="--dx: -6px; --dy: -10px; animation-delay: 0.4s;"></div>
+                <div class="verified-dust" style="--dx: 10px; --dy: 6px; animation-delay: 0.8s;"></div>
+            </div>
+          ` : ''}
+          ${isAdmin ? `
+            <div class="admin-badge-container" title="Administrator">
+                <div class="admin-dust" style="left: 20%; animation-delay: 0s;"></div>
+                <div class="admin-dust" style="left: 50%; animation-delay: 0.8s;"></div>
+                <div class="admin-dust" style="left: 80%; animation-delay: 1.6s;"></div>
+                <svg class="admin-shield-icon" viewBox="0 0 24 24">
+                    <defs>
+                        <linearGradient id="silverMetal_${item.id}" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#e6e6e6" />
+                            <stop offset="25%" stop-color="#b0b0b0" />
+                            <stop offset="50%" stop-color="#ffffff" />
+                            <stop offset="75%" stop-color="#808080" />
+                            <stop offset="100%" stop-color="#505050" />
+                        </linearGradient>
+                        <linearGradient id="shieldReflect_${item.id}" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="rgba(255,255,255,0)" />
+                            <stop offset="50%" stop-color="rgba(255,255,255,0.9)" />
+                            <stop offset="100%" stop-color="rgba(255,255,255,0)" />
+                            <animate attributeName="x1" from="-150%" to="150%" dur="2s" repeatCount="indefinite" />
+                            <animate attributeName="x2" from="-50%" to="250%" dur="2s" repeatCount="indefinite" />
+                        </linearGradient>
+                    </defs>
+                    <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" fill="url(#silverMetal_${item.id})" stroke="#666" stroke-width="0.5"/>
+                    <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" fill="url(#shieldReflect_${item.id})" style="mix-blend-mode: overlay;" />
+                </svg>
+                <span class="admin-text">ADMIN</span>
+            </div>
+          ` : ''}
+          ${showAdminControls && !isAdmin ? `
+             <button onclick="toggleUserVerification('${item.uid}', ${isVerifiedUser}, '${safeName}', '${rPhoto}')" style="background:none; border:1px solid #30363d; border-radius:4px; cursor:pointer; color:#8b949e; padding:2px 6px; font-size:0.7em; margin-left:5px;" title="${isVerifiedUser ? 'Revoke Verification' : 'Grant Verification'}">
+                ${isVerifiedUser ? 'Unverify' : 'Verify'}
+             </button>
+             <button onclick="toggleUserBan('${item.uid}', ${isBanned}, '${safeName}', '${rPhoto}')" style="background:none; border:1px solid #ff4d4d; border-radius:4px; cursor:pointer; color:#ff4d4d; padding:2px 6px; font-size:0.7em; margin-left:5px;" title="${isBanned ? 'Unban User' : 'Ban User'}">
+                ${isBanned ? 'Unban' : 'Ban'}
+             </button>
+          ` : ''}
+          ${showAdminControls ? `
+             <button onclick="deleteActivityItem('${item.type}s', '${item.id}')" style="background:none; border:1px solid #ff4d4d; border-radius:4px; cursor:pointer; color:#ff4d4d; padding:2px 6px; font-size:0.7em; margin-left:5px;" title="Delete Item">
+                Delete
+             </button>
+          ` : ''}
+        </div>
+      `;
+
+      let content = '';
+
+      if (item.type === 'report') {
+        // Determine Scam Type Label
+        const typeLabels = {
+            'not_delivered': 'Paid but not delivered',
+            'fake_item': 'Fake / Low Quality',
+            'wrong_item': 'Wrong Item Sent',
+            'phishing': 'Phishing Link',
+            'other': 'Scam Report'
+        };
+        const typeLabel = typeLabels[item.scamType] || 'Scam Report';
+
+        // Build Image Section
+        let imagesHtml = '';
+        if (item.imageExpected || item.imageGot) {
+             imagesHtml = '<div class="comparison-view">';
+             if (item.imageExpected) {
+                 imagesHtml += `
+                    <div class="comparison-item">
+                        <div class="scam-badge" style="background:#21262d; color:#8b949e;">Expected</div>
+                        <img src="${item.imageExpected}" onclick="window.open(this.src)">
+                    </div>`;
+             }
+             if (item.imageGot) {
+                 imagesHtml += `
+                    <div class="comparison-item">
+                        <div class="scam-badge" style="background:#ff4d4d; color:white;">Received</div>
+                        <img src="${item.imageGot}" onclick="window.open(this.src)">
+                    </div>`;
+             }
+             imagesHtml += '</div>';
+        } else if (item.image) {
+            // Fallback for old reports
+            imagesHtml = `<img src="${item.image}" style="max-width:100%; border-radius:6px; margin-top:10px;">`;
+        }
+
+        content = `
+          <div class="review-header" style="align-items:center;">
+            ${userHtml}
+            <span>${date}</span>
+          </div>
+          <div style="margin-bottom:10px; font-size:0.9em;">
+            <span class="scam-type-tag">${typeLabel}</span><br>
+            <span style="opacity:0.8">Reported Name: ${escapeHTML(item.displayName)}</span>
+          </div>
+          ${item.description ? `<p style="margin:10px 0; font-size:0.95em; color:#eaeaea; line-height:1.5;">${escapeHTML(item.description)}</p>` : ''}
+          ${imagesHtml}
+        `;
+      } else {
+        const stars = '★'.repeat(item.rating) + '☆'.repeat(5 - item.rating);
+        content = `
+          <div class="review-header" style="align-items:center;">
+            ${userHtml}
+            <div style="text-align:right;">
+              <div style="color:#ffaa00;">${stars}</div>
+              <span style="font-size:0.8em;">${date}</span>
+            </div>
+          </div>
+          ${item.good ? `<p style="margin:5px 0; font-size:0.9em;"><strong style="color:#4dff88">Pros:</strong> ${escapeHTML(item.good)}</p>` : ''}
+          ${item.bad ? `<p style="margin:5px 0; font-size:0.9em;"><strong style="color:#ff4d4d">Cons:</strong> ${escapeHTML(item.bad)}</p>` : ''}
+        `;
+      }
+
+      const div = document.createElement('div');
+      div.className = 'review-card';
+      
+      // Highlight Logic
+      if (highlightId && item.id === highlightId) {
+          div.id = 'highlight-target';
+          div.style.border = '1px solid #8b5cf6';
+          div.style.boxShadow = '0 0 15px rgba(139, 92, 246, 0.15), inset 0 0 20px rgba(139, 92, 246, 0.05)';
+          div.style.position = 'relative';
+          div.style.zIndex = '10';
+      }
+
+      div.innerHTML = content;
+      container.appendChild(div);
+    });
+
+    // Scroll to highlight
+    if (highlightId) {
+        setTimeout(() => {
+            const el = document.getElementById('highlight-target');
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 600);
+    }
+  } catch (e) {
+    console.error("Error loading details:", e);
+    container.innerHTML = '<p style="text-align:center; color:#ff4d4d;">Error loading details.</p>';
+  }
+}
+
+/* CHART GENERATOR */
+function generateTrustChart(data, color) {
+  if (data.length < 2) return '<p style="text-align:center; padding-top:60px; opacity:0.5;">Not enough data for chart</p>';
+
+  const width = 300;
+  const height = 100;
+  const maxScore = 100;
+  
+  const startTime = data[0].date;
+  const endTime = data[data.length - 1].date;
+  const duration = endTime - startTime || 1;
+
+  // Normalize points
+  const pointsData = data.map(d => {
+    const x = ((d.date - startTime) / duration) * width;
+    const y = height - (d.score / maxScore) * height;
+    return { x, y, score: d.score, date: d.date };
+  });
+
+  const points = pointsData.map(p => `${p.x},${p.y}`).join(' ');
+
+  // Create Area Path (for gradient fill)
+  const areaPoints = `0,${height} ${points} ${width},${height}`;
+
+  const startDateStr = new Date(startTime).toLocaleDateString(undefined, {month:'short', year:'2-digit'});
+  const endDateStr = new Date(endTime).toLocaleDateString(undefined, {month:'short', year:'2-digit'});
+  
+  // Generate interactive points
+  const pointsHTML = pointsData.map(p => `
+    <g class="point-group">
+      <line x1="${p.x}" y1="0" x2="${p.x}" y2="${height}" stroke="${color}" stroke-width="1" stroke-dasharray="4" class="point-line" />
+      <circle cx="${p.x}" cy="${p.y}" r="10" fill="transparent" style="cursor:pointer" />
+      <circle cx="${p.x}" cy="${p.y}" r="4" fill="${color}" stroke="#0f1115" stroke-width="2" class="point-dot" />
+      <title>Score: ${p.score}\nDate: ${new Date(p.date).toLocaleDateString()}</title>
+    </g>
+  `).join('');
+
+  return `
+    <svg viewBox="0 -10 ${width} ${height + 30}" preserveAspectRatio="none" style="overflow: visible;">
+      <style>
+        .chart-line {
+          fill: none;
+          stroke-width: 2.5px;
+          stroke-dasharray: 1000;
+          stroke-dashoffset: 1000;
+          animation: drawLine 2.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        .chart-area {
+          opacity: 0;
+          animation: fadeInArea 2s ease-in-out 0.5s forwards;
+        }
+        .point-dot {
+          opacity: 0;
+          transition: all 0.2s ease;
+        }
+        .point-line {
+          opacity: 0;
+          transition: opacity 0.2s ease;
+        }
+        .point-group:hover .point-line {
+          opacity: 0.6;
+        }
+        .point-group:hover .point-dot {
+          opacity: 1;
+          r: 6;
+        }
+        .chart-points {
+            opacity: 0;
+            animation: fadeInArea 2s ease-in-out 1s forwards;
+        }
+        @keyframes drawLine { to { stroke-dashoffset: 0; } }
+        @keyframes fadeInArea { to { opacity: 1; } }
+      </style>
+      <defs>
+        <linearGradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="${color}" stop-opacity="0.4"/>
+          <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <!-- Grid lines -->
+      <line x1="0" y1="0" x2="${width}" y2="0" stroke="#30363d" stroke-width="1" stroke-dasharray="4" />
+      <line x1="0" y1="${height/2}" x2="${width}" y2="${height/2}" stroke="#30363d" stroke-width="1" stroke-dasharray="4" />
+      <line x1="0" y1="${height}" x2="${width}" y2="${height}" stroke="#30363d" stroke-width="1" />
+
+      <polygon points="${areaPoints}" class="chart-area" fill="url(#chartGradient)" />
+      <polyline points="${points}" class="chart-line" stroke="${color}" />
+      
+      <g class="chart-points">
+        ${pointsHTML}
+      </g>
+      
+      <!-- Date Labels -->
+      <text x="0" y="${height + 20}" fill="#8b949e" font-size="12">${startDateStr}</text>
+      <text x="${width}" y="${height + 20}" fill="#8b949e" font-size="12" text-anchor="end">${endDateStr}</text>
+    </svg>
+  `;
+}
+
+/* ADMIN: TOGGLE USER VERIFICATION */
+async function toggleUserVerification(uid, currentStatus, displayName = 'Unknown', photoURL = '') {
+    const action = async () => {
+      try {
+        if (currentStatus) {
+            await deleteDoc(doc(db, "verified_users", uid));
+        } else {
+            await setDoc(doc(db, "verified_users", uid), {
+                timestamp: Date.now(),
+                grantedBy: auth.currentUser.uid,
+                displayName: displayName,
+                photoURL: photoURL
+            });
+        }
+        // Refresh details view
+        if (window.lastDetailsArgs) {
+            populateDetailsView(window.lastDetailsArgs.url, window.lastDetailsArgs.type);
+        }
+        // Refresh dashboard if open
+        if (!document.getElementById('admin-dashboard').classList.contains('hidden')) {
+            renderAdminDashboard();
+        }
+      } catch(e) {
+        showToast("Action failed: " + e.message, "error");
+      }
+    };
+
+    if (currentStatus) {
+        // Revoking (Deleting) -> Use Timer
+        startDeletionTimer(action, "Revoking verification");
+    } else {
+        // Granting -> Use Confirm
+        if (await showConfirm("Grant 'Verified' badge to this user?", "Verify User")) action();
+    }
+}
+
+/* ADMIN: TOGGLE USER BAN */
+async function toggleUserBan(uid, currentStatus, displayName = 'Unknown', photoURL = '', reason = '', skipConfirm = false) {
+    const action = async () => {
+      try {
+        if (currentStatus) {
+            await deleteDoc(doc(db, "banned_users", uid));
+        } else {
+            if (!reason) {
+                reason = prompt("Enter reason for ban:", "Violation of Terms");
+                if (reason === null) return; // Cancelled
+            }
+
+            await setDoc(doc(db, "banned_users", uid), {
+                timestamp: Date.now(),
+                bannedBy: auth.currentUser.uid,
+                displayName: displayName,
+                photoURL: photoURL,
+                reason: reason
+            });
+        }
+        // Refresh details view
+        if (window.lastDetailsArgs) {
+            populateDetailsView(window.lastDetailsArgs.url, window.lastDetailsArgs.type);
+        }
+        // Refresh dashboard if open
+        if (!document.getElementById('admin-dashboard').classList.contains('hidden')) {
+            renderAdminDashboard();
+        }
+      } catch(e) {
+        showToast("Action failed: " + e.message, "error");
+      }
+    };
+
+    if (currentStatus) {
+        // Unbanning (Deleting) -> Use Timer
+        startDeletionTimer(action, "Unbanning user");
+    } else {
+        // Banning -> Use Confirm
+        if (skipConfirm || await showConfirm("Ban this user? They will be unable to post.", "Ban User", true)) {
+            await action();
+        }
+    }
+}
+
+/* ADMIN: MANUAL BAN */
+async function manualBanUser() {
+    const uidInput = document.getElementById('admin-ban-uid');
+    const nameInput = document.getElementById('admin-ban-name');
+    const reasonInput = document.getElementById('admin-ban-reason');
+    const reasonSelect = document.getElementById('admin-ban-reason-select');
+    
+    const uid = uidInput.value.trim();
+    const name = nameInput.value.trim() || 'Unknown User';
+    let reason = reasonInput.value.trim();
+    
+    if (reasonSelect && reasonSelect.value !== 'Other') {
+        reason = reasonSelect.value;
+    }
+    if (!reason) reason = 'Violation of Terms';
+    
+    if (!uid) { showToast("Please enter a User UID.", "error"); return; }
+    
+    // Confirmation Modal
+    const confirmMsg = `Are you sure you want to ban this user?<br><br><strong>UID:</strong> ${uid}<br><strong>Name:</strong> ${name}<br><strong>Reason:</strong> ${reason}`;
+    if (!await showConfirm(confirmMsg, "Confirm Manual Ban", true)) return;
+
+    await toggleUserBan(uid, false, name, 'https://via.placeholder.com/40', reason, true);
+    uidInput.value = '';
+    nameInput.value = '';
+    
+    if (reasonSelect) {
+        reasonSelect.value = 'Violation of Terms';
+        reasonInput.style.display = 'none';
+        reasonInput.value = 'Violation of Terms';
+    } else {
+        reasonInput.value = '';
+    }
+}
+
+/* ADMIN: MANUAL VERIFY */
+async function manualVerifyUser() {
+    const uidInput = document.getElementById('admin-verify-uid');
+    const nameInput = document.getElementById('admin-verify-name');
+    
+    const uid = uidInput.value.trim();
+    const name = nameInput.value.trim() || 'Unknown User';
+    
+    if (!uid) {
+        showToast("Please enter a User UID.", "error");
+        return;
+    }
+    
+    await toggleUserVerification(uid, false, name, 'https://via.placeholder.com/40');
+    
+    // Clear inputs
+    uidInput.value = '';
+    nameInput.value = '';
+}
+
+function initAdminBanControls() {
+    const reasonInput = document.getElementById('admin-ban-reason');
+    if (!reasonInput || document.getElementById('admin-ban-reason-select')) return;
+
+    const select = document.createElement('select');
+    select.id = 'admin-ban-reason-select';
+    select.className = 'scam-type-select';
+    select.style.marginBottom = '10px';
+    
+    const options = [
+        "Violation of Terms",
+        "Spam / Scam Activity",
+        "Harassment / Abuse",
+        "Fake Proof / False Reporting",
+        "Other"
+    ];
+
+    options.forEach(opt => {
+        const el = document.createElement('option');
+        el.value = opt;
+        el.innerText = opt;
+        select.appendChild(el);
+    });
+
+    reasonInput.parentNode.insertBefore(select, reasonInput);
+    reasonInput.style.display = 'none';
+    reasonInput.value = options[0];
+
+    select.onchange = () => {
+        if (select.value === 'Other') {
+            reasonInput.style.display = 'block';
+            reasonInput.value = '';
+            reasonInput.placeholder = "Enter custom reason...";
+            reasonInput.focus();
+        } else {
+            reasonInput.style.display = 'none';
+            reasonInput.value = select.value;
+        }
+    };
+}
+
+/* ADMIN: BLACKLIST LOGIC */
+async function addBlacklistDomain() {
+    if (!auth.currentUser) { showToast("Session expired. Please login.", "error"); return; }
+
+    const input = document.getElementById('admin-blacklist-input');
+    let rawDomain = input.value.trim().toLowerCase();
+    
+    if (!rawDomain) { showToast("Please enter a domain.", "error"); return; }
+    
+    // Clean domain (remove http://, path, www., etc)
+    try {
+        if (!/^https?:\/\//i.test(rawDomain)) {
+            rawDomain = 'https://' + rawDomain;
+        }
+        const urlObj = new URL(rawDomain);
+        rawDomain = urlObj.hostname;
+        if (rawDomain.startsWith('www.')) rawDomain = rawDomain.substring(4);
+    } catch (e) { /* Fallback to raw input if parsing fails */ }
+
+    if (!rawDomain.includes('.') || rawDomain.includes(' ')) { showToast("Invalid domain format.", "error"); return; }
+
+    try {
+        // Check if exists
+        const q = query(collection(db, "blacklist"), where("domain", "==", rawDomain));
+        const snap = await getDocs(q);
+        if (!snap.empty) { showToast("Domain already blacklisted.", "error"); return; }
+
+        await addDoc(collection(db, "blacklist"), {
+            domain: rawDomain,
+            addedBy: auth.currentUser.uid,
+            timestamp: Date.now()
+        });
+        
+        input.value = '';
+        showToast(`Blocked: ${rawDomain}`, "success");
+        renderBlacklist();
+    } catch (e) {
+        if (e.code === 'permission-denied') {
+            showToast("Permission denied. Check Firestore Rules.", "error");
+        } else {
+            showToast("Error adding domain: " + e.message, "error");
+        }
+    }
+}
+
+async function removeBlacklistDomain(id) {
+    if (!await showConfirm("Remove this domain from blacklist?", "Confirm Removal")) return;
+    try {
+        await deleteDoc(doc(db, "blacklist", id));
+        showToast("Domain removed.", "success");
+        renderBlacklist();
+    } catch (e) {
+        showToast("Error removing domain: " + e.message, "error");
+    }
+}
+
+async function renderBlacklist() {
+    const container = document.getElementById('admin-blacklist-list');
+    if (!container) return;
+    
+    container.innerHTML = getSkeletonHTML(2);
+    
+    try {
+        const q = query(collection(db, "blacklist"), orderBy("timestamp", "desc"));
+        const snapshot = await getDocs(q);
+        
+        if (snapshot.empty) {
+            container.innerHTML = '<p style="text-align:center; opacity:0.7;">No blacklisted domains.</p>';
+            return;
+        }
+        
+        container.innerHTML = '';
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const card = document.createElement('div');
+            card.className = 'mini-card';
+            card.style.borderColor = '#ff4d4d';
+            card.innerHTML = `
+            <div class="card-header" style="justify-content:space-between;">
+                <div class="card-user" style="color:#ff4d4d;">${escapeHTML(data.domain)}</div>
+                <button onclick="removeBlacklistDomain('${doc.id}')" style="background:none; border:none; color:#8b949e; cursor:pointer;">
+                    <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                </button>
+            </div>
+            <div style="font-size:0.8em; color:#8b949e; margin-top:4px;">Added: ${new Date(data.timestamp).toLocaleDateString()}</div>
+            `;
+            container.appendChild(card);
+            resizeGridItem(card);
+        });
+        setTimeout(resizeAllGridItems, 100);
+    } catch (e) {
+        console.error("Blacklist render error:", e);
+        if (e.code === 'permission-denied') {
+             const projectId = firebaseConfig.projectId;
+             container.innerHTML = `
+                <div style="text-align:center; color:#ff4d4d; padding:20px; border:1px dashed #ff4d4d; border-radius:8px;">
+                    <p><strong>Permission Denied</strong></p>
+                    <p style="font-size:0.9em; opacity:0.8;">1. Go to <a href="https://console.firebase.google.com/project/${projectId}/firestore/rules" target="_blank" style="color:#38bdf8; text-decoration:underline;">Firestore Rules</a></p>
+                    <p style="font-size:0.9em; opacity:0.8;">2. Add this rule for 'blacklist':</p>
+                    <div style="background:#0d1117; padding:10px; margin-top:10px; text-align:left; font-family:monospace; font-size:0.8em; overflow-x:auto; color:#eaeaea; user-select:all;">
+                        match /blacklist/{docId} {<br>
+                        &nbsp;&nbsp;allow read: if true;<br>
+                        &nbsp;&nbsp;allow write: if request.auth.uid == '${ADMIN_UID}';<br>
+                        }
+                    </div>
+                </div>`;
+        } else {
+            container.innerHTML = `<div style="text-align:center; color:#ff4d4d; padding:20px;"><p>Failed to load blacklist.</p><small style="opacity:0.7">${e.message}</small></div>`;
+        }
+    }
+}
+
+function initAdminBlacklistUI() {
+    // Inject Tab Button
+    const verifiedBtn = document.getElementById('admin-verified-tab-btn');
+    if (verifiedBtn && verifiedBtn.parentNode && !document.getElementById('admin-blacklist-tab-btn')) {
+        const btn = document.createElement('button');
+        btn.id = 'admin-blacklist-tab-btn';
+        btn.className = 'home-tab-btn';
+        btn.onclick = () => switchAdminTab('blacklist');
+        btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg> Blacklist`;
+        verifiedBtn.parentNode.appendChild(btn);
+    }
+
+    // Inject Section
+    const verifiedSection = document.getElementById('admin-verified-section');
+    if (verifiedSection && verifiedSection.parentNode && !document.getElementById('admin-blacklist-section')) {
+        const section = document.createElement('div');
+        section.id = 'admin-blacklist-section';
+        section.className = 'hidden';
+        section.innerHTML = `
+            <div class="card" style="margin-bottom:20px; border-color:#ff4d4d;">
+                <h3 style="margin-top:0; color:#ff4d4d;">Add to Blacklist</h3>
+                <div style="display:flex; gap:10px;">
+                    <input type="text" id="admin-blacklist-input" placeholder="example.com" style="margin-bottom:0;">
+                    <button onclick="addBlacklistDomain()" class="visit-btn" style="width:auto; margin-top:0; background:#ff4d4d; color:white;">Block</button>
+                </div>
+            </div>
+            <div id="admin-blacklist-list" class="report-grid"></div>
+        `;
+        verifiedSection.parentNode.appendChild(section);
+    }
+}
+
+/* DELETION TIMER LOGIC */
+let pendingDeletion = null;
+
+function startDeletionTimer(callback, message = "Deleting item") {
+    if (pendingDeletion) cancelDeletion();
+
+    const toast = document.getElementById('undo-toast');
+    const msgEl = document.getElementById('undo-message');
+    const progress = document.getElementById('undo-progress');
+    
+    if (!toast) {
+        showConfirm("Are you sure?", "Confirm Action", true).then(yes => {
+            if(yes) callback();
+        });
+        return;
+    }
+
+    let timeLeft = 4; // 4 seconds
+    
+    const updateMsg = () => {
+        msgEl.innerHTML = `${message} in <span style="font-weight:bold; color:#ff4d4d;">${timeLeft}s</span>`;
+    };
+    updateMsg();
+
+    toast.classList.remove('hidden');
+    
+    // Reset and Start Animation
+    progress.style.transition = 'none';
+    progress.style.width = '100%';
+    void progress.offsetWidth; // Force reflow
+    progress.style.transition = `width ${timeLeft}s linear`;
+    progress.style.width = '0%';
+
+    const interval = setInterval(() => {
+        timeLeft--;
+        if (timeLeft > 0) updateMsg();
+    }, 1000);
+
+    const timeout = setTimeout(() => {
+        clearInterval(interval);
+        toast.classList.add('hidden');
+        pendingDeletion = null;
+        callback();
+    }, timeLeft * 1000);
+
+    pendingDeletion = { timeout, interval };
+}
+
+function cancelDeletion() {
+    if (pendingDeletion) {
+        clearTimeout(pendingDeletion.timeout);
+        clearInterval(pendingDeletion.interval);
+        pendingDeletion = null;
+    }
+    const toast = document.getElementById('undo-toast');
+    if (toast) toast.classList.add('hidden');
+    
+    const progress = document.getElementById('undo-progress');
+    if(progress) {
+        progress.style.transition = 'none';
+        progress.style.width = '100%';
+    }
+}
+
+/* ADMIN: RENDER DASHBOARD */
+async function renderAdminDashboard() {
+    const container = document.getElementById('admin-user-list');
+    const banContainer = document.getElementById('admin-banned-list');
+    if (!container || !banContainer) return;
+    
+    initAdminBanControls();
+    initAdminBlacklistUI();
+    
+    container.innerHTML = getSkeletonHTML(3);
+    banContainer.innerHTML = getSkeletonHTML(3);
+    
+    // 1. Render Verified Users
+    const q = query(collection(db, "verified_users"), orderBy("timestamp", "desc"));
+    const snapshot = await getDocs(q);
+    
+    if (snapshot.empty) {
+        container.innerHTML = '<p style="text-align:center; opacity:0.7;">No verified users found.</p>';
+    } else {
+        container.innerHTML = '';
+    }
+    snapshot.forEach(doc => {
+        const data = doc.data();
+        const card = document.createElement('div');
+        card.className = 'mini-card';
+        card.innerHTML = `
+            <div class="card-header">
+                <img src="${data.photoURL || 'https://via.placeholder.com/40'}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
+                <div class="card-user" style="color:#ffd700;">${escapeHTML(data.displayName || 'Unknown User')}</div>
+            </div>
+            <div style="font-size:0.9em; color:#8b949e; margin-top:5px;">
+                <div>UID: <span style="font-family:monospace;">${doc.id}</span>
+                    <button onclick="copyToClipboard('${doc.id}')" style="background:none; border:none; cursor:pointer; padding:0 4px; color:#8b5cf6; vertical-align:middle;" title="Copy UID">
+                        <svg viewBox="0 0 24 24" style="width:14px; height:14px; fill:currentColor;"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+                    </button>
+                </div>
+                <div>Verified: ${new Date(data.timestamp).toLocaleDateString()}</div>
+            </div>
+            <button class="delete-btn" onclick="toggleUserVerification('${doc.id}', true)">Revoke Verification</button>
+        `;
+        container.appendChild(card);
+        const img = card.querySelector('img');
+        if (img) {
+            if (img.complete) resizeGridItem(card);
+            else img.onload = () => resizeGridItem(card);
+        }
+        resizeGridItem(card);
+    });
+
+    // 2. Render Banned Users
+    const qBan = query(collection(db, "banned_users"), orderBy("timestamp", "desc"));
+    const snapBan = await getDocs(qBan);
+
+    if (snapBan.empty) {
+        banContainer.innerHTML = '<p style="text-align:center; opacity:0.7;">No banned users found.</p>';
+    } else {
+        banContainer.innerHTML = '';
+    }
+    snapBan.forEach(doc => {
+        const data = doc.data();
+        const card = document.createElement('div');
+        card.className = 'mini-card';
+        card.style.borderColor = '#ff4d4d';
+        card.innerHTML = `
+            <div class="card-header">
+                <img src="${data.photoURL || 'https://via.placeholder.com/40'}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
+                <div class="card-user">${escapeHTML(data.displayName || 'Unknown User')}</div>
+            </div>
+            <div style="font-size:0.9em; color:#ff4d4d; margin-top:5px;">BANNED: ${new Date(data.timestamp).toLocaleDateString()}<br>Reason: ${escapeHTML(data.reason || 'N/A')}</div>
+            <button class="visit-btn" onclick="toggleUserBan('${doc.id}', true)" style="margin-top:10px;">Unban User</button>
+        `;
+        banContainer.appendChild(card);
+        const img = card.querySelector('img');
+        if (img) {
+            if (img.complete) resizeGridItem(card);
+            else img.onload = () => resizeGridItem(card);
+        }
+        resizeGridItem(card);
+    });
+    
+    filterAdminList(); // Re-apply filter if search text exists
+    renderBlacklist();
+    setTimeout(resizeAllGridItems, 100);
+}
+
+/* AI SUMMARY GENERATOR (Client-Side NLP) */
+function generateAISummary(items, verifiedUsers = new Set()) {
+  // 1. Data Selection: Analyze last 100 interactions for relevance
+  const analysisWindow = items.slice(-100);
+  const ratings = analysisWindow.filter(i => i.type === 'rating');
+  const reports = analysisWindow.filter(i => i.type === 'report');
+  
+  if (ratings.length === 0 && reports.length === 0) return "Insufficient data for advanced AI analysis.";
+
+  // --- ASPECT ANALYSIS ENGINE ---
+  // Expanded Knowledge Base (Multilingual: EN, FR, TN/Derja)
+  const aspects = {
+      shipping: { 
+          score: 0, mentions: 0, 
+          keywords: [
+              'shipping', 'delivery', 'arrived', 'package', 'time', 'fast', 'slow', 'late', 'tracking', 'ship', 'received', 'wait', 'lost', 'customs',
+              'livraison', 'recu', 'rapide', 'lent', 'retard', 'colis', 'envoi', 'expedition', 'jamais', 'attendre', 'perdu', 'douane', 'suivi',
+              'wsol', 'wsel', 'bta', 'yebta', 'sri3', 'ta3til', 'livreur', 'jeb', 'ywasel', 'twasil', 'estanna', 'jeni', 'dhaya3', 'diwana', 'masrou9'
+          ] 
+      },
+      quality: { 
+          score: 0, mentions: 0, 
+          keywords: [
+              'quality', 'product', 'item', 'material', 'authentic', 'fake', 'condition', 'broken', 'damaged', 'looks', 'real', 'good', 'bad', 'working', 'size', 'color', 'plastic',
+              'qualite', 'produit', 'article', 'matiere', 'authentique', 'faux', 'contrefacon', 'casse', 'abime', 'mauvais', 'bon', 'marche', 'panne', 'taille', 'couleur', 'plastique',
+              'sel3a', 'behia', 'khayba', 'mouch', 'madhroub', 'original', 's7i7', '9mech', 'mgarba3', 'falsou', 'dorigine', 'behi', '7ala', 'tayara', 'mriguel', '3al 7it', '9yes', 'loun', 'sghir', 'kbir', '7did'
+          ] 
+      },
+      service: { 
+          score: 0, mentions: 0, 
+          keywords: [
+              'service', 'communication', 'seller', 'reply', 'response', 'rude', 'helpful', 'friendly', 'ignore', 'support', 'scam', 'liar', 'blocked', 'respect', 'professional',
+              'service', 'vendeur', 'reponse', 'repond', 'aimable', 'poli', 'arnaque', 'voleur', 'client', 'support', 'bloque', 'menteur', 'impoli', 'respect',
+              'service', 'yjaweb', 'message', 'tel', 'haz', '9dar', 'thaya9', 'galleb', 'sara9', 'kadeb', 'yghoch', 'ma yrod', 'block', '9lebni', 'sra9ni', '7ram', 'msattek', 'i7tiram', 'm3allem', 'pro'
+          ] 
+      },
+      price: { 
+          score: 0, mentions: 0, 
+          keywords: [
+              'price', 'cost', 'value', 'worth', 'cheap', 'expensive', 'deal', 'refund', 'money', 'paid', 'scam', 'steal',
+              'prix', 'cout', 'cher', 'remboursement', 'argent', 'valeur', 'paye', 'arnaque', 'vol',
+              'soum', 'ghali', 'rkhis', 'flous', 'rajja3', 'ha9', 'mleyen', 'dinar', 'dafa3t', '5allast', '9alba', 'sra9'
+          ] 
+      }
+  };
+
+  // Helper: Normalize text (remove accents, lowercase)
+  const normalize = (str) => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : "";
+
+  const analyzeText = (text, sentimentMultiplier) => {
+      if (!text) return;
+      const normText = normalize(text);
+      Object.keys(aspects).forEach(key => {
+          if (aspects[key].keywords.some(kw => normText.includes(kw))) {
+              aspects[key].score += sentimentMultiplier;
+              aspects[key].mentions++;
+          }
+      });
+  };
+
+  let totalStars = 0;
+  ratings.forEach(r => {
+      totalStars += parseInt(r.rating);
+      analyzeText(r.good, 1);
+      analyzeText(r.bad, -1.5);
+  });
+
+  // Analyze Reports (Deep Content Understanding)
+  reports.forEach(r => {
+      // Reports are inherently negative context
+      analyzeText(r.description, -2.0); 
+      analyzeText(r.scamType, -2.0);
+  });
+
+  const avgStars = ratings.length ? (totalStars / ratings.length) : 0;
+  
+  // Filter and Sort Aspects
+  const significantAspects = Object.entries(aspects).filter(([k, v]) => v.mentions > 0);
+  significantAspects.sort((a, b) => Math.abs(b[1].score) - Math.abs(a[1].score));
+
+  // Check for Verified Sources
+  const verifiedReports = reports.filter(r => verifiedUsers.has(r.uid));
+  const verifiedRatings = ratings.filter(r => verifiedUsers.has(r.uid));
+  let verifiedNote = "";
+
+  if (verifiedReports.length > 0) {
+      verifiedNote = ` <span style="color:#ff4d4d; font-weight:bold;">⚠ Verified Source Alert:</span> Trusted community members have flagged this profile.`;
+  } else if (verifiedRatings.length > 0 && avgStars >= 4.0) {
+      verifiedNote = ` <span style="color:#4dff88; font-weight:bold;">✓ Verified Endorsement:</span> Trusted members have vouched for this seller.`;
+  }
+
+
+  // 2. Critical Risk Analysis (Reports)
+  if (reports.length > 0) {
+      const recentReports = reports.filter(r => (Date.now() - r.timestamp) < (30 * 24 * 60 * 60 * 1000));
+      
+      // Smart Override: If the profile has a strong positive history that outweighs reports
+      // (Avg > 3.7 stars AND Ratings count is at least 3x Report count)
+      const isResilient = avgStars >= 3.7 && ratings.length >= (reports.length * 3);
+
+      if (!isResilient) {
+          let msg = "";
+          if (recentReports.length > 0) {
+              msg = `<strong>🚨 CRITICAL THREAT DETECTED:</strong> Advanced analysis identified a high-velocity scam pattern (${recentReports.length} reports in 30 days). The profile exhibits behavior consistent with fraudulent operations. <strong>Do not engage.</strong>`;
+          } else {
+              msg = `<strong>⚠ Risk Advisory:</strong> Historical analysis found ${reports.length} confirmed scam reports. Although recent activity is lower, the account has a compromised trust history. Proceed with extreme caution.`;
+          }
+
+          // If we have ratings data, append the CONS only (since it's high risk)
+          if (ratings.length > 0) {
+              const negatives = significantAspects.filter(([k, v]) => v.score < 0);
+              if (negatives.length > 0) {
+                  msg += ` Additionally, users frequently cite issues with <strong>${negatives[0][0]}</strong>.`;
+              }
+          }
+          return msg + verifiedNote;
+      }
+  }
+
+  // 3. Advanced Sentiment & Trend Analysis
+  
+  // Trend Calculation (Linear Regression)
+  const trendItems = [...ratings, ...reports].sort((a, b) => a.timestamp - b.timestamp);
+  let trendSlope = 0;
+  let recentAvg = 0;
+  let hasTrend = false;
+
+  if (trendItems.length >= 3) {
+      const scores = trendItems.map(i => i.type === 'report' ? 1 : (parseInt(i.rating) || 3));
+      
+      // Linear Regression (Least Squares)
+      let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+      const n = scores.length;
+      
+      scores.forEach((y, x) => {
+          sumX += x;
+          sumY += y;
+          sumXY += x * y;
+          sumX2 += x * x;
+      });
+      
+      const numerator = (n * sumXY) - (sumX * sumY);
+      const denominator = (n * sumX2) - (sumX * sumX);
+      
+      if (denominator !== 0) {
+          trendSlope = numerator / denominator;
+          hasTrend = true;
+      }
+
+      // Calculate Recent Average (Last 3 items or 30%)
+      const recentCount = Math.max(3, Math.floor(n * 0.3));
+      const recentScores = scores.slice(-recentCount);
+      recentAvg = recentScores.reduce((a, b) => a + b, 0) / recentScores.length;
+  }
+
+  let summary = "";
+
+  // A. Reputation Overview with Trend
+  if (avgStars >= 4.8) summary += `<strong>Elite Status:</strong> This profile maintains a near-perfect ${avgStars.toFixed(1)}/5 rating. `;
+  else if (avgStars >= 4.0) summary += `<strong>Trusted Seller:</strong> Analysis shows generally positive feedback (${avgStars.toFixed(1)}/5). `;
+  else if (avgStars >= 3.0) summary += `<strong>Mixed Reputation:</strong> Feedback is inconsistent (${avgStars.toFixed(1)}/5). `;
+  else if (avgStars >= 2.0) summary += `<strong>Poor Standing:</strong> User satisfaction is low (${avgStars.toFixed(1)}/5). `;
+  else summary += `<strong>High Risk:</strong> Extremely negative feedback detected (${avgStars.toFixed(1)}/5). `;
+
+  // B. Smart Pros/Cons Logic
+  if (significantAspects.length > 0) {
+      
+      // HIGH RISK (Scam Rate High / Low Stars) -> Focus on Cons, suppress Pros
+      if (avgStars < 3.0) {
+          const negatives = significantAspects.filter(([k, v]) => v.score < 0);
+          if (negatives.length > 0) {
+              summary += `The AI engine flagged critical failures in <strong>${negatives[0][0]}</strong>`;
+              if (negatives.length > 1) summary += ` and <strong>${negatives[1][0]}</strong>`;
+              summary += `. Positive feedback is negligible or suspicious.`;
+          } else {
+              summary += `Multiple complaints analyzed regarding service and delivery.`;
+          }
+      }
+      // TRUSTED (High Stars) -> Focus on Pros, only mention repeated Cons
+      else if (avgStars >= 4.0) {
+          const positives = significantAspects.filter(([k, v]) => v.score > 0);
+          const negatives = significantAspects.filter(([k, v]) => v.score < 0);
+          
+          if (positives.length > 0) {
+              summary += `Buyers consistently praise the <strong>${positives[0][0]}</strong>`;
+              if (positives.length > 1) summary += ` and <strong>${positives[1][0]}</strong>`;
+              summary += `. `;
+          }
+          
+          // Only mention cons if they are significant (repeated)
+          // Threshold: score <= -2 (meaning at least 2 bad reviews or 1 very bad weighted)
+          const seriousNegatives = negatives.filter(([k, v]) => v.score <= -2);
+          if (seriousNegatives.length > 0) {
+              summary += `However, a minority of users reported issues with <strong>${seriousNegatives[0][0]}</strong>.`;
+          } else {
+              summary += `No significant recurring issues found.`;
+          }
+      }
+      // MIXED/BALANCED (3.0 - 3.9) -> Show both if close
+      else {
+          const topPositive = significantAspects.find(([k, v]) => v.score > 0);
+          const topNegative = significantAspects.find(([k, v]) => v.score < 0);
+          
+          if (topPositive && topNegative) {
+              summary += `While <strong>${topPositive[0]}</strong> is a strength, there are persistent concerns regarding <strong>${topNegative[0]}</strong>.`;
+          } else if (topPositive) {
+              summary += `<strong>${topPositive[0]}</strong> is a highlight, but overall consistency varies.`;
+          } else if (topNegative) {
+              summary += `<strong>${topNegative[0]}</strong> is a primary pain point for buyers.`;
+          }
+      }
+  } else {
+      summary += "Detailed text analysis was inconclusive due to brief reviews.";
+  }
+
+  // C. Trend Insight
+  if (hasTrend) {
+      if (trendSlope > 0.05) {
+          summary += ` <span style="color:#4dff88">Trending Up 📈.</span>`;
+      } else if (trendSlope < -0.05) {
+          // Context Aware: Only flag "Trending Down" if recent performance is actually poor (< 4.0)
+          // This prevents flagging a drop from 5.0 to 4.5 as a "negative trend"
+          if (recentAvg < 4.0) {
+              summary += ` <span style="color:#ff4d4d">Trending Down 📉.</span>`;
+          }
+      }
+  }
+
+  // D. Historical Report Note (if critical warning was skipped)
+  if (reports.length > 0) {
+      summary += ` <span style="color:#ffaa00; display:block; margin-top:8px; font-size:0.9em;"><strong>⚠ Note:</strong> This profile has ${reports.length} historical report(s), but recent reputation is generally positive.</span>`;
+  }
+
+  return summary + verifiedNote;
+}
+
+function generateHistoryLogHTML(items) {
+    let html = '';
+    // Create a copy and reverse to show newest first
+    [...items].reverse().forEach(item => {
+        const date = new Date(item.timestamp).toLocaleDateString();
+        let action = '';
+        let impact = '';
+        let color = '';
+        
+        if (item.type === 'report') {
+            action = 'Scam Report';
+            impact = item.dynamicImpact || 'Critical (-15)';
+            color = '#ff4d4d';
+        } else {
+            const stars = parseInt(item.rating);
+            action = `${stars}-Star Rating`;
+            impact = item.dynamicImpact || (stars >= 3 ? 'Positive' : 'Negative');
+            
+            if (stars >= 4) color = '#4dff88';
+            else if (stars === 3) color = '#8b949e';
+            else if (stars === 2) color = '#ffaa00';
+            else color = '#ff4d4d';
+        }
+        
+        html += `
+            <div class="history-item">
+                <span class="history-date">${date}</span>
+                <span>${action}</span>
+                <span style="color:${color}">${impact}</span>
+            </div>
+        `;
+    });
+    return html;
+}
+
+function toggleHistoryLog() {
+  const log = document.getElementById('history-log-container');
+  const btn = document.getElementById('expand-history-btn');
+  if (log) {
+    log.classList.toggle('hidden');
+    if (btn) {
+        btn.innerText = log.classList.contains('hidden') ? 'View Full History' : 'Hide History';
+    }
+  }
+}
+
+/* ==========================================
+   ACTIVITY & RATINGS LOGIC
+   ========================================== */
+
+async function submitRating() {
+  const linkInput = document.getElementById('rate-link');
+  let link = linkInput.value.trim();
+  const rating = document.getElementById('rating-input').value;
+  
+  // Prepend Country Code if visible
+  const select = document.getElementById('rate-country-select');
+  if (select && !select.classList.contains('hidden')) {
+      link = select.value + link;
+  }
+
+  const good = document.getElementById('rate-good').value.trim();
+  const bad = document.getElementById('rate-bad').value.trim();
+  const user = auth.currentUser;
+  const btn = document.querySelector('#form-rate .submit-btn');
+
+  // Check Ban Status (Server-Side Check)
+  const banSnap = await getDoc(doc(db, "banned_users", user.uid));
+  if (banSnap.exists()) {
+      const reason = banSnap.data().reason || "Violation of Terms";
+      throw new Error(`You are banned from posting. Reason: ${reason}`);
+  }
+
+  if (!link || rating == 0) {
+    const missing = [];
+    if (!link) missing.push(linkInput);
+    if (rating == 0) missing.push(document.querySelector('.rating-container'));
+    
+    triggerShake(missing);
+    showToast("Please provide a link and a star rating.", "error");
+    return;
+  }
+
+  // UI Loading State
+  const originalText = btn.innerText;
+  btn.classList.add('loading');
+  btn.disabled = true;
+
+  try {
+    // 0. AI Content Guard Check
+    const goodCheck = AI_ContentGuard.analyze(good);
+    const badCheck = AI_ContentGuard.analyze(bad);
+    
+    if (!goodCheck.safe) throw new Error(`Security Alert (Pros): ${goodCheck.reason}`);
+    if (!badCheck.safe) throw new Error(`Security Alert (Cons): ${badCheck.reason}`);
+
+    // 1. Verify Link
+    link = await verifyUrl(link);
+
+    // Retrieve Metadata
+    let enrichedData = {};
+    if (linkInput.dataset.enrichedData) {
+        try {
+            enrichedData = JSON.parse(linkInput.dataset.enrichedData);
+        } catch (e) {
+            console.warn("Error parsing metadata", e);
+        }
+    }
+
+    const review = {
+      url: link,
+      rating: rating,
+      good: good,
+      bad: bad,
+      timestamp: Date.now(),
+      uid: user.uid,
+      realName: enrichedData.realName || null,
+      platformImage: enrichedData.platformImage || null,
+      metaTitle: enrichedData.metaTitle || null,
+      metaDescription: enrichedData.metaDescription || null,
+      userEmail: user.email,
+      reporterName: user.displayName || 'Anonymous',
+      reporterPhoto: user.photoURL || 'https://via.placeholder.com/150'
+    };
+
+    await addDoc(collection(db, "ratings"), review);
+    showToast("Rating submitted successfully!", "success");
+    document.getElementById('form-rate').reset();
+    setRating(0); // Reset stars
+    showPage('login', 'activity');
+  } catch (e) {
+    console.error("Submission error: ", e);
+    showToast(e.message || "Error submitting rating.", "error");
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('loading');
+    btn.innerText = originalText;
+  }
+}
+
+async function renderActivity() {
+  const reportsContainer = document.getElementById('activity-reports');
+  const ratingsContainer = document.getElementById('activity-ratings');
+  const user = auth.currentUser;
+
+  if (!user) return;
+
+  // Show Skeletons while loading
+  reportsContainer.innerHTML = getSkeletonHTML(2);
+  ratingsContainer.innerHTML = getSkeletonHTML(2);
+
+  try {
+    // Fetch User Reports
+    // Removed orderBy from query to avoid Firestore Index requirement. Sorting client-side instead.
+    const qReports = query(collection(db, "reports"), where("uid", "==", user.uid));
+    const reportsSnap = await getDocs(qReports);
+    const reports = [];
+    reportsSnap.forEach((doc) => {
+      const data = doc.data();
+      if (data.displayName) reports.push({ id: doc.id, ...data });
+    });
+    // Sort by timestamp descending (newest first)
+    reports.sort((a, b) => b.timestamp - a.timestamp);
+
+    // Update Reports Tab Count
+    const reportsTab = document.getElementById('activity-reports-tab-btn');
+    if (reportsTab) {
+      const span = reportsTab.querySelector('span');
+      if (span) span.innerText = `My Reports (${reports.length})`;
+    }
+
+    // Render Reports
+    reportsContainer.innerHTML = reports.length ? '' : '<p style="opacity:0.6">No reports yet.</p>';
+    reports.forEach((r, index) => {
+      const platform = getPlatformInfo(r.url);
+      const originalIcon = platform.icon;
+      if (r.platformImage) {
+          platform.icon = `
+            <img src="${r.platformImage}" 
+                 style="width:100%; height:100%; object-fit:cover; border-radius:inherit; display:block;" 
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+            <div style="display:none; width:100%; height:100%; align-items:center; justify-content:center;">${originalIcon}</div>
+          `;
+      }
+      const displayTitle = escapeHTML(r.realName || r.displayName);
+
+      const card = document.createElement('div');
+      card.className = 'mini-card';
+      card.style.cursor = 'pointer';
+      
+      // Click Handler
+      card.onclick = (e) => {
+          if (e.target.closest('button')) return;
+          window.lastClickedGridItem = card;
+          window.lastGridScrollY = window.scrollY;
+          openDetails(r.url, 'reports', r.id);
+      };
+      
+      // Activity Link Preview
+      if (r.metaTitle && (r.platformImage || r.metaDescription)) {
+          card.style.padding = '0';
+          card.style.overflow = 'hidden';
+          card.innerHTML = `
+            ${r.platformImage ? `<div style="width:100%; height:120px; overflow:hidden; background:#0d1117; border-bottom:1px solid #30363d;"><img src="${r.platformImage}" style="width:100%; height:100%; object-fit:cover;"></div>` : ''}
+            <div style="padding:12px;">
+                <div style="font-weight:bold; font-size:1em; margin-bottom:4px; color:#f0f6fc;">${escapeHTML(r.metaTitle)}</div>
+                <div style="font-size:0.85em; color:#8b949e; margin-bottom:10px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${escapeHTML(r.metaDescription || r.url)}</div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="display:flex; align-items:center; gap:6px; font-size:0.75em; color:#8b949e;">
+                        <div style="width:16px; height:16px;">${platform.icon}</div>
+                        <span>${platform.name}</span>
+                    </div>
+                    <button class="delete-btn" onclick="event.stopPropagation(); deleteActivityItem('reports', '${r.id}')" style="margin:0; padding:4px 8px; font-size:0.75em; width:auto;">Delete</button>
+                </div>
+            </div>
+          `;
+      } else {
+          card.innerHTML = `
+            <div class="card-header">
+              <div class="platform-icon" style="background:${platform.color}">${platform.icon}</div>
+              <div class="card-user">${displayTitle}</div>
+            </div>
+            <small style="opacity:0.7; word-break:break-all;">${r.url}</small>
+            ${r.image ? `<img src="${r.image}" style="width:100%; border-radius:6px; margin-top:10px; object-fit:cover;">` : ''}
+            <button class="delete-btn" onclick="event.stopPropagation(); deleteActivityItem('reports', '${r.id}')" style="margin-top:auto;">Delete Report</button>
+          `;
+      }
+      
+      reportsContainer.appendChild(card);
+      
+      const img = card.querySelector('img');
+      if (img) {
+          if (img.complete) resizeGridItem(card);
+          else img.onload = () => resizeGridItem(card);
+      }
+      resizeGridItem(card);
+    });
+
+    // Fetch User Ratings
+    const qRatings = query(collection(db, "ratings"), where("uid", "==", user.uid));
+    const ratingsSnap = await getDocs(qRatings);
+    const ratings = [];
+    ratingsSnap.forEach((doc) => {
+      const data = doc.data();
+      if (data.rating) ratings.push({ id: doc.id, ...data });
+    });
+    // Sort by timestamp descending
+    ratings.sort((a, b) => b.timestamp - a.timestamp);
+
+    // Update Ratings Tab Count
+    const ratingsTab = document.getElementById('activity-ratings-tab-btn');
+    if (ratingsTab) {
+      const span = ratingsTab.querySelector('span');
+      if (span) span.innerText = `My Ratings (${ratings.length})`;
+    }
+
+    // Render Ratings
+    ratingsContainer.innerHTML = ratings.length ? '' : '<p style="opacity:0.6">No ratings yet.</p>';
+    ratings.forEach((r, index) => {
+      const platform = getPlatformInfo(r.url);
+      const originalIcon = platform.icon;
+      if (r.platformImage) {
+          platform.icon = `
+            <img src="${r.platformImage}" 
+                 style="width:100%; height:100%; object-fit:cover; border-radius:inherit; display:block;" 
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+            <div style="display:none; width:100%; height:100%; align-items:center; justify-content:center;">${originalIcon}</div>
+          `;
+      }
+      const username = extractUsername(r.url);
+      const displayTitle = escapeHTML(r.realName || username);
+
+      const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+      const card = document.createElement('div');
+      card.className = 'mini-card';
+      card.style.cursor = 'pointer';
+
+      // Click Handler
+      card.onclick = (e) => {
+          if (e.target.closest('button')) return;
+          window.lastClickedGridItem = card;
+          window.lastGridScrollY = window.scrollY;
+          openDetails(r.url, 'ratings', r.id);
+      };
+      
+      // Activity Link Preview
+      if (r.metaTitle && (r.platformImage || r.metaDescription)) {
+          card.style.padding = '0';
+          card.style.overflow = 'hidden';
+          card.innerHTML = `
+            ${r.platformImage ? `<div style="width:100%; height:120px; overflow:hidden; background:#0d1117; border-bottom:1px solid #30363d;"><img src="${r.platformImage}" style="width:100%; height:100%; object-fit:cover;"></div>` : ''}
+            <div style="padding:12px;">
+                <div style="font-weight:bold; font-size:1em; margin-bottom:4px; color:#f0f6fc;">${escapeHTML(r.metaTitle)}</div>
+                <div style="color:#ffaa00; font-size:1.1em; margin-bottom:6px;">${stars}</div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="display:flex; align-items:center; gap:6px; font-size:0.75em; color:#8b949e;">
+                        <div style="width:16px; height:16px;">${platform.icon}</div>
+                        <span>${platform.name}</span>
+                    </div>
+                    <button class="delete-btn" onclick="event.stopPropagation(); deleteActivityItem('ratings', '${r.id}')" style="margin:0; padding:4px 8px; font-size:0.75em; width:auto;">Delete</button>
+                </div>
+            </div>
+          `;
+      } else {
+          card.innerHTML = `
+            <div class="card-header">
+              <div class="platform-icon" style="background:${platform.color}">${platform.icon}</div>
+              <div class="card-user">${displayTitle}</div>
+            </div>
+            <div style="color:#ffaa00; font-size:1.2em; margin-bottom:5px;">${stars}</div>
+            <small style="opacity:0.7; word-break:break-all;">${r.url}</small>
+            ${r.good ? `<p style="font-size:0.9em; margin:5px 0;"><strong style="color:#4dff88">Good:</strong> ${escapeHTML(r.good)}</p>` : ''}
+            ${r.bad ? `<p style="font-size:0.9em; margin:5px 0;"><strong style="color:#ff4d4d">Bad:</strong> ${escapeHTML(r.bad)}</p>` : ''}
+            <button class="delete-btn" onclick="event.stopPropagation(); deleteActivityItem('ratings', '${r.id}')" style="margin-top:auto;">Delete Rating</button>
+          `;
+      }
+
+      ratingsContainer.appendChild(card);
+      const img = card.querySelector('img');
+      if (img) {
+          if (img.complete) resizeGridItem(card);
+          else img.onload = () => resizeGridItem(card);
+      }
+      resizeGridItem(card);
+    });
+    setTimeout(resizeAllGridItems, 100);
+  } catch (error) {
+    console.error("Error fetching activity:", error);
+    reportsContainer.innerHTML = '<p style="color:#ff4d4d">Error loading reports.</p>';
+    ratingsContainer.innerHTML = '<p style="color:#ff4d4d">Error loading ratings.</p>';
+  }
+}
+
+async function deleteActivityItem(collectionName, docId) {
+  startDeletionTimer(async () => {
+      try {
+        await deleteDoc(doc(db, collectionName, docId));
+        // alert("Deleted successfully."); // Removed for smoother UX
+        renderActivity();
+        // Update home grid if item deleted
+        if (collectionName === 'reports') renderReports();
+        if (collectionName === 'ratings') renderRatings();
+        
+        // Refresh details view if open
+        const detailsView = document.getElementById('details-view');
+        if (detailsView && !detailsView.classList.contains('hidden') && window.lastDetailsArgs) {
+            populateDetailsView(window.lastDetailsArgs.url, window.lastDetailsArgs.type);
+        }
+      } catch (e) {
+        console.error("Error deleting document: ", e);
+        showToast("Error deleting item.", "error");
+      }
+  }, "Deleting item");
+}
+
+/* ==========================================
+   NOTIFICATIONS LOGIC
+   ========================================== */
+
+function toggleNotifications() {
+  const dropdown = document.getElementById('notification-dropdown');
+  if (dropdown) {
+    dropdown.classList.toggle('hidden');
+    
+    // If opening, mark all as read
+    if (!dropdown.classList.contains('hidden') && auth.currentUser) {
+        const badge = document.getElementById('notification-badge');
+        if (badge) badge.classList.add('hidden');
+        localStorage.setItem('lastReadTime_' + auth.currentUser.uid, Date.now());
+    }
+  }
+}
+
+function loadNotifications() {
+  const list = document.getElementById('notification-list');
+  const badge = document.getElementById('notification-badge');
+  if (!list || !badge) return;
+
+  // State to hold data from listeners
+  let reports = [];
+  let ratings = [];
+  let reportsLoaded = false;
+  let ratingsLoaded = false;
+  let currentUserBan = null;
+  let currentUserVerified = null;
+
+  // Function to analyze data and render notifications
+  const runAnalysis = () => {
+    // Only run if we have data from both collections (or at least attempted to load)
+    if (!reportsLoaded || !ratingsLoaded) return;
+
+    const notifications = [];
+    const now = Date.now();
+    const user = auth.currentUser;
+    const lastRead = user ? (parseInt(localStorage.getItem('lastReadTime_' + user.uid)) || 0) : 0;
+    const twoDays = 48 * 60 * 60 * 1000;
+
+    // Data Aggregation & Scoring
+    const sellers = {};
+
+    const getSeller = (url) => {
+        // Normalize URL to group effectively
+        const key = url.toLowerCase().replace(/\/$/, '').replace(/^(?:https?:\/\/)?(?:www\.)?/, '');
+        if (!sellers[key]) {
+            sellers[key] = {
+                url: url,
+                displayName: '',
+                positiveScore: 0,
+                negativeScore: 0,
+                recentNegativeScore: 0,
+                reportCount: 0,
+                ratingCount: 0
+            };
+        }
+        return sellers[key];
+    };
+
+    // 0. Check Ban Status (Highest Priority)
+    if (currentUserBan) {
+        notifications.push({
+            type: 'ban',
+            title: '🚫 Account Suspended',
+            message: `You have been banned from posting.<br><strong>Reason:</strong> ${currentUserBan.reason || 'Violation of Terms'}`,
+            timestamp: Date.now() + 10000 // Ensure it stays at top
+        });
+    }
+
+    // 0.5. Check Verification Status
+    if (currentUserVerified) {
+        notifications.push({
+            type: 'verified',
+            title: 'You are Verified! ✓',
+            message: 'Congratulations! You have been recognized as a trusted community member.',
+            timestamp: currentUserVerified.timestamp
+        });
+    }
+
+    // 1. Process Reports (High Negative Impact)
+    reports.forEach(r => {
+        if (!r.url) return;
+        const s = getSeller(r.url);
+        s.displayName = r.displayName || s.displayName;
+        s.reportCount++;
+        
+        // Weight: -7 per report (Heavy penalty)
+        s.negativeScore += 7;
+        
+        if (now - r.timestamp < twoDays) {
+            s.recentNegativeScore += 7;
+        }
+    });
+
+    // 2. Process Ratings (Nuanced Impact)
+    ratings.forEach(r => {
+        if (!r.url) return;
+        const s = getSeller(r.url);
+        s.ratingCount++;
+        const stars = parseInt(r.rating);
+
+        if (stars === 5) {
+            s.positiveScore += 2; // +2 for 5 stars
+        } else if (stars === 4) {
+            s.positiveScore += 1; // +1 for 4 stars
+        } else if (stars === 2) {
+            s.negativeScore += 2; // -2 for 2 stars
+        } else if (stars === 1) {
+            // Treat 1-star as a "soft" report (Potential Spam/Scam)
+            // Weighted -5 (Half as bad as a full report)
+            s.negativeScore += 5; 
+            if (now - r.timestamp < twoDays) {
+                s.recentNegativeScore += 5;
+            }
+        }
+        // 3 stars is neutral (0 points)
+    });
+
+    // 3. Smart Analysis Algorithm
+    Object.values(sellers).forEach(s => {
+        const totalImpact = s.positiveScore + s.negativeScore;
+        // Safety Percentage (0% = Scam, 100% = Safe)
+        // Default to 50% (Neutral) if no data
+        const safetyRatio = totalImpact === 0 ? 0.5 : (s.positiveScore / totalImpact);
+        const safetyPercent = Math.round(safetyRatio * 100);
+
+        // --- ALGORITHM RULES ---
+
+        // A. HIGH RISK / URGENT
+        // Trigger if recent negativity is high (Velocity check).
+        // FAIRNESS: If the seller has a high safety % (long good history), 
+        // we require a much higher spike in recent reports to flag them as "Urgent".
+        
+        let riskThreshold = 15; // Base: ~1.5 reports or 3 1-star ratings in 48h
+        
+        // Fairness Buffer: Trusted sellers need more reports to trigger an alert
+        if (safetyPercent > 80 && s.positiveScore > 20) {
+            riskThreshold = 40; // Needs ~4 reports to flag a trusted seller
+        } else if (safetyPercent > 60) {
+            riskThreshold = 25;
+        }
+
+        if (s.recentNegativeScore >= riskThreshold) {
+            let title = '🚨 High Risk Alert';
+            let msg = `<strong>${s.displayName || s.url}</strong> has received multiple reports recently.`;
+            
+            // Different message for usually trusted sellers
+            if (safetyPercent > 70) {
+                title = '⚠ Unusual Activity';
+                msg = `<strong>${s.displayName}</strong> is usually trusted (${safetyPercent}% safe), but has a sudden spike in reports.`;
+            }
+
+            notifications.push({
+                type: 'urgent',
+                title: title,
+                message: msg,
+                timestamp: now // Top priority
+            });
+        }
+
+        // B. TOP RATED
+        // Must have high positive score, high safety ratio, and NO recent negativity.
+        if (s.positiveScore >= 20 && safetyPercent >= 90 && s.recentNegativeScore === 0) {
+            notifications.push({
+                type: 'good',
+                title: '🏆 Top Rated Seller',
+                message: `<strong>${s.displayName || s.url}</strong> maintains a ${safetyPercent}% safety rating with ${s.ratingCount} reviews.`,
+                timestamp: now - 1000
+            });
+        }
+    });
+
+    // Sort notifications by importance/time
+    notifications.sort((a, b) => b.timestamp - a.timestamp);
+
+    // Calculate Unread Count
+    const unreadCount = notifications.filter(n => n.timestamp > lastRead).length;
+
+    // Update Banned UI (FAB & Bell)
+    const fab = document.querySelector('.floating-pill-btn');
+    const bellBtn = document.querySelector('.notification-btn');
+    
+    if (currentUserBan) {
+        if (fab) {
+            fab.classList.add('banned-fab');
+            fab.dataset.banReason = currentUserBan.reason || 'Violation of Terms';
+            const reportSpan = fab.querySelector('.fab-content-report');
+            if (reportSpan) {
+                reportSpan.innerHTML = `
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                    <span>Banned</span>
+                `;
+            }
+        }
+        if (bellBtn) bellBtn.classList.add('banned-bell');
+    } else {
+        if (fab) {
+            fab.classList.remove('banned-fab');
+            delete fab.dataset.banReason;
+            const reportSpan = fab.querySelector('.fab-content-report');
+            if (reportSpan) {
+                reportSpan.innerHTML = `
+                    <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                    <span>Report</span>
+                `;
+            }
+        }
+        if (bellBtn) bellBtn.classList.remove('banned-bell');
+    }
+
+    // Render UI
+    list.innerHTML = notifications.length ? '' : '<p style="padding:15px; text-align:center; opacity:0.6; font-size:0.9em;">No new alerts.</p>';
+    badge.innerText = unreadCount > 9 ? '9+' : unreadCount;
+    badge.classList.toggle('hidden', unreadCount === 0);
+
+    notifications.forEach(n => {
+      const color = n.type === 'ban' ? '#ff4d4d' : (n.type === 'urgent' ? '#ff4d4d' : (n.type === 'verified' ? '#38bdf8' : '#ffaa00'));
+      const icon = n.type === 'ban' ? '🚫' : (n.type === 'urgent' ? '⚠' : (n.type === 'verified' ? '✓' : '🏆'));
+      list.innerHTML += `
+        <div class="notification-item" style="${n.type === 'ban' ? 'background:rgba(255, 77, 77, 0.1); border:1px solid rgba(255, 77, 77, 0.3);' : ''}">
+          <div class="notif-icon" style="color:${color}">${icon}</div>
+          <div class="notif-content" style="font-size:0.9em;">
+            <strong style="color:${color}; display:block; margin-bottom:2px;">${n.title}</strong>
+            ${n.message}
+          </div>
+        </div>
+      `;
+    });
+  };
+
+  // Real-time listener for Reports
+  const qReports = query(collection(db, "reports"), orderBy("timestamp", "desc"));
+  onSnapshot(qReports, (snapshot) => {
+    reports = [];
+    snapshot.forEach(doc => reports.push(doc.data()));
+    reportsLoaded = true;
+    runAnalysis();
+  });
+
+  // Real-time listener for Ratings
+  const qRatings = query(collection(db, "ratings"), orderBy("timestamp", "desc"));
+  onSnapshot(qRatings, (snapshot) => {
+    ratings = [];
+    snapshot.forEach(doc => ratings.push(doc.data()));
+    ratingsLoaded = true;
+    runAnalysis();
+  });
+
+  // Real-time listener for Ban Status (User Specific)
+  let banUnsubscribe = null;
+  let verifyUnsubscribe = null;
+  
+  onAuthStateChanged(auth, (user) => {
+      if (user) {
+          banUnsubscribe = onSnapshot(doc(db, "banned_users", user.uid), (doc) => {
+              currentUserBan = doc.exists() ? doc.data() : null;
+              runAnalysis();
+          });
+          verifyUnsubscribe = onSnapshot(doc(db, "verified_users", user.uid), (doc) => {
+              currentUserVerified = doc.exists() ? doc.data() : null;
+              runAnalysis();
+          });
+      } else {
+          if (banUnsubscribe) banUnsubscribe();
+          if (verifyUnsubscribe) verifyUnsubscribe();
+          currentUserBan = null;
+          currentUserVerified = null;
+      }
+  });
+}
+
+/* SEARCH FUNCTION */
+function performSearch() {
+  const query = document.getElementById('search-input').value.trim();
+  const sort = document.getElementById('sort-filter') ? document.getElementById('sort-filter').value : 'trending';
+  const clearBtn = document.getElementById('clear-search-btn');
+  const searchLabel = document.getElementById('search-results-label');
+
+  if (query) {
+    if (clearBtn) clearBtn.classList.remove('hidden');
+    if (searchLabel) {
+      searchLabel.innerText = `Search Results for "${query}"`;
+      searchLabel.classList.remove('hidden');
+    }
+  } else {
+    if (clearBtn) clearBtn.classList.add('hidden');
+    if (searchLabel) {
+      searchLabel.classList.add('hidden');
+    }
+  }
+
+  renderReports(query, sort);
+  renderRatings(query, sort);
+}
+
+function clearSearch() {
+  document.getElementById('search-input').value = '';
+  performSearch();
+}
+
+function handleSortChange() {
+  performSearch(); // Re-runs render with current query and new sort
+}
+window.handleSortChange = handleSortChange;
+
+/* ==========================================
+   DYNAMIC FORM INJECTION
+   ========================================== */
+function injectDynamicFormFields() {
+  const form = document.getElementById('form-scam');
+  // Prevent double injection
+  if (!form || document.getElementById('scam-type-selector')) return;
+
+  const descInput = document.getElementById('scammer-desc');
+  
+  // Disable description initially
+  if (descInput) {
+    descInput.disabled = true;
+    descInput.placeholder = "Please select a scam type above first...";
+    descInput.style.opacity = "0.5";
+    descInput.style.cursor = "not-allowed";
+  }
+
+  const oldFileWrapper = form.querySelector('.file-upload-wrapper');
+  
+  // 1. Create Scam Type Selector
+  const typeWrapper = document.createElement('div');
+  typeWrapper.innerHTML = `
+    <label style="display:block; margin-bottom:8px; color:#8b949e; font-weight:600;">Type of Scam</label>
+    <select id="scam-type-selector" class="scam-type-select" onchange="handleScamTypeChange()">
+      <option value="" disabled selected>Select what happened...</option>
+      <option value="not_delivered">Paid but item never arrived</option>
+      <option value="fake_item">Item received was fake / Low quality</option>
+      <option value="wrong_item">Received completely different item</option>
+      <option value="phishing">Phishing / Suspicious Link</option>
+      <option value="other">Other (Describe below)</option>
+    </select>
+  `;
+  
+  // Insert before description
+  form.insertBefore(typeWrapper, descInput);
+
+  // 2. Create New Proof Section
+  const proofContainer = document.createElement('div');
+  proofContainer.id = 'dynamic-proof-container';
+  proofContainer.className = 'hidden';
+  proofContainer.innerHTML = `
+    <div class="section-separator" style="margin: 20px auto;"></div>
+    <p style="text-align:center; color:#eaeaea; margin-bottom:15px; font-weight:bold;">Upload Proof</p>
+    <div class="proof-section">
+      <!-- Expected -->
+      <div class="proof-upload-box" id="box-expected">
+        <span class="proof-label">What I Expected<br><span class="proof-sublabel">(Listing/Website Photo)</span></span>
+        <label for="file-expected" style="cursor:pointer; color:#8b5cf6; font-weight:bold;">Choose Image</label>
+        <input type="file" id="file-expected" class="hidden-file-input" accept="image/*" onchange="previewProof(this, 'preview-expected')">
+        <img id="preview-expected" class="proof-preview">
+      </div>
+
+      <!-- Got -->
+      <div class="proof-upload-box" id="box-got">
+        <span class="proof-label">What I Got<br><span class="proof-sublabel">(Photo of delivered item)</span></span>
+        <label for="file-got" style="cursor:pointer; color:#8b5cf6; font-weight:bold;">Choose Image</label>
+        <input type="file" id="file-got" class="hidden-file-input" accept="image/*" onchange="previewProof(this, 'preview-got')">
+        <img id="preview-got" class="proof-preview">
+      </div>
+    </div>
+  `;
+
+  // Insert after description
+  descInput.parentNode.insertBefore(proofContainer, descInput.nextSibling);
+
+  // Character Counter
+  const maxLength = 500;
+  descInput.setAttribute('maxlength', maxLength);
+  
+  const counter = document.createElement('div');
+  counter.className = 'char-counter';
+  counter.innerText = `0 / ${maxLength}`;
+  
+  // Insert directly after textarea (before the proof container)
+  descInput.parentNode.insertBefore(counter, proofContainer);
+
+  descInput.addEventListener('input', () => {
+      const len = descInput.value.length;
+      counter.innerText = `${len} / ${maxLength}`;
+      counter.className = 'char-counter' + (len >= maxLength ? ' limit-reached' : (len >= maxLength * 0.9 ? ' limit-near' : ''));
+  });
+
+  // Hide old file input
+  if (oldFileWrapper) oldFileWrapper.style.display = 'none';
+}
+
+function handleScamTypeChange() {
+  const type = document.getElementById('scam-type-selector').value;
+  const container = document.getElementById('dynamic-proof-container');
+  const boxExpected = document.getElementById('box-expected');
+  const boxGot = document.getElementById('box-got');
+  const fileExpected = document.getElementById('file-expected');
+  const fileGot = document.getElementById('file-got');
+  const descInput = document.getElementById('scammer-desc');
+
+  if (!type) {
+    container.classList.add('hidden');
+    if (descInput) {
+        descInput.disabled = true;
+        descInput.style.opacity = "0.5";
+        descInput.style.cursor = "not-allowed";
+    }
+    return;
+  }
+
+  // Enable description
+  if (descInput) {
+    descInput.disabled = false;
+    descInput.placeholder = "Describe what happened...";
+    descInput.style.opacity = "1";
+    descInput.style.cursor = "text";
+  }
+  
+  // Logic: Hide proof upload for 'not_delivered' or 'phishing'
+  if (type === 'not_delivered' || type === 'phishing') {
+    container.classList.add('hidden');
+    if (fileExpected) fileExpected.value = '';
+    if (fileGot) fileGot.value = '';
+    document.querySelectorAll('.proof-preview').forEach(el => { el.src = ''; el.classList.remove('visible'); });
+  } else if (type === 'other') {
+    container.classList.remove('hidden');
+    boxExpected.classList.add('full-width');
+    boxGot.classList.add('hidden');
+    
+    if (fileGot) fileGot.value = '';
+    const previewGot = document.getElementById('preview-got');
+    if (previewGot) { previewGot.src = ''; previewGot.classList.remove('visible'); }
+    
+    const label = boxExpected.querySelector('.proof-label');
+    label.innerHTML = 'Upload Evidence<br><span class="proof-sublabel">(Optional)</span>';
+  } else {
+    container.classList.remove('hidden');
+    boxExpected.classList.remove('full-width');
+    boxGot.classList.remove('hidden');
+    
+    const label = boxExpected.querySelector('.proof-label');
+    label.innerHTML = 'What I Expected<br><span class="proof-sublabel">(Listing/Website Photo)</span>';
+  }
+}
+
+async function previewProof(input, previewId) {
+    const previewImg = document.getElementById(previewId);
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        if (!file.type.startsWith('image/')) {
+            showToast("Please upload an image file.", "error");
+            input.value = '';
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            previewImg.src = e.target.result;
+            previewImg.classList.add('visible');
+            // Optional: Add NSFW check here if desired, reusing logic from previewImage
+        }
+        reader.readAsDataURL(file);
+    } else {
+        previewImg.classList.remove('visible');
+    }
+}
+
+/* RATE LINK FROM MODAL */
+function rateLinkFromModal(url) {
+    // Close modal if open
+    const cancelBtn = document.getElementById('modal-cancel');
+    if (cancelBtn) cancelBtn.click();
+    
+    // Navigate to report page
+    showPage('report');
+    
+    // Force switch to Rate tab
+    switchTab('rate');
+    
+    // Pre-fill URL
+    setTimeout(() => {
+        const input = document.getElementById('rate-link');
+        if (input) {
+            input.value = url;
+            handleInput('rate-link', 'rate-preview');
+            input.focus();
+            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, 300);
+}
+
+/* REPORT LINK FROM MODAL */
+function reportLinkFromModal(url) {
+    // Close modal by triggering cancel (resolves promise with false)
+    const cancelBtn = document.getElementById('modal-cancel');
+    if (cancelBtn) cancelBtn.click();
+    
+    // Navigate to report page
+    showPage('report');
+    
+    // Force switch to Scam Report tab
+    switchTab('scam');
+    
+    // Pre-fill URL
+    setTimeout(() => {
+        const input = document.getElementById('scammer-link');
+        if (input) {
+            input.value = url;
+            handleInput('scammer-link', 'link-preview');
+            input.focus();
+            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, 300);
+}
+
+/* LINK INTERCEPTION & VERIFICATION */
+async function interceptLink(e, url, riskStatus) {
+  if (e) e.preventDefault();
+  
+  // Skip for phone numbers
+  if (url.startsWith('tel:')) {
+      window.location.href = url;
+      return;
+  }
+
+  // 1. Show Confirmation
+  const isHighRisk = riskStatus.includes('High Risk') || riskStatus.includes('Potential Risk');
+  const color = isHighRisk ? '#ff4d4d' : '#8b949e';
+  
+  const confirmMsg = `
+    <div style="text-align:center;">
+        <p>You are about to leave IsItAScam to visit:</p>
+        <p style="color:#38bdf8; word-break:break-all; font-weight:bold; margin:10px 0;">${escapeHTML(url)}</p>
+        <div style="background:${color}22; border:1px solid ${color}; color:${color}; padding:10px; border-radius:8px; margin:15px 0;">
+            <strong>⚠ Community Status: ${riskStatus}</strong>
+            ${isHighRisk ? '<br><small>Proceed with extreme caution.</small>' : ''}
+        </div>
+        <div style="margin-top:15px; padding-top:15px; border-top:1px solid #30363d;">
+            <button onclick="reportLinkFromModal(decodeURIComponent(&quot;${encodeURIComponent(url)}&quot;))" style="background:none; border:none; color:#ff4d4d; font-size:0.9em; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; width:100%; padding:5px; border-radius:4px; transition:background 0.2s;">
+                <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg>
+                Report this link as unsafe
+            </button>
+        </div>
+    </div>
+  `;
+
+  const proceed = await showConfirm(confirmMsg, "External Link Warning", isHighRisk);
+  if (!proceed) return;
+
+  // 2. Show Loading / Verification
+  const overlay = document.getElementById('custom-confirm-modal');
+  const titleEl = document.getElementById('modal-title');
+  const msgEl = document.getElementById('modal-message');
+  const actionsEl = document.querySelector('.modal-actions');
+  
+  if (overlay) {
+      overlay.classList.add('active'); // Ensure it stays open
+      titleEl.innerText = "Verifying Link Safety...";
+      msgEl.innerHTML = `
+        <div style="padding:20px; text-align:center;">
+            <div class="modal-loader"></div>
+            <p style="margin-top:15px; color:#8b949e;">Running security checks...</p>
+        </div>
+      `;
+      actionsEl.style.display = 'none';
+  }
+
+  // 3. Run Checks
+  try {
+      // Artificial delay for UX
+      await new Promise(r => setTimeout(r, 1500));
+      
+      // Reuse verifyUrl logic
+      await verifyUrl(url);
+      
+      // Success
+      window.open(url, '_blank');
+      overlay.classList.remove('active');
+      
+      // Reset modal state
+      setTimeout(() => {
+          if(actionsEl) actionsEl.style.display = 'flex';
+      }, 300);
+
+  } catch (error) {
+      // Verification Failed
+      if(titleEl) titleEl.innerText = "Security Alert";
+      if(msgEl) msgEl.innerHTML = `
+        <div style="text-align:center; color:#ff4d4d;">
+            <svg viewBox="0 0 24 24" style="width:48px; height:48px; fill:currentColor; margin-bottom:10px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+            <p><strong>Link Flagged as Unsafe</strong></p>
+            <p style="color:#eaeaea; font-size:0.9em; margin:10px 0;">${error.message}</p>
+        </div>
+      `;
+      if(actionsEl) actionsEl.style.display = 'flex';
+      
+      // Re-bind buttons
+      const confirmBtn = document.getElementById('modal-confirm');
+      const cancelBtn = document.getElementById('modal-cancel');
+      
+      if(confirmBtn) {
+          confirmBtn.innerText = "Proceed Anyway (Unsafe)";
+          confirmBtn.className = "modal-btn btn-confirm danger";
+          confirmBtn.onclick = () => {
+              window.open(url, '_blank');
+              overlay.classList.remove('active');
+          };
+      }
+      
+      if(cancelBtn) {
+          cancelBtn.innerText = "Go Back";
+          cancelBtn.onclick = () => {
+              overlay.classList.remove('active');
+          };
+      }
+  }
+}
+
+/* BACK BUTTON LOGIC */
+function handleBackClick(targetPage, forceExit = false) {
+  // 1. Handle Details View Exit (Return to previous context)
+  const detailsView = document.getElementById('details-view');
+  if (detailsView && !detailsView.classList.contains('hidden')) {
+      const returnTo = window.lastActivePage || 'home';
+      
+      // Preserve scroll if returning to the same page
+      if (window.lastGridScrollY !== undefined) {
+          window.skipScrollReset = true;
+      }
+      
+      // Restore specific tab state for Login/Profile page
+      if (returnTo === 'login' && window.lastProfileTab) {
+          showPage(returnTo, window.lastProfileTab, window.lastActivitySubTab);
+      } else {
+          showPage(returnTo);
+      }
+      
+      // Restore scroll position
+      if (window.lastGridScrollY !== undefined) {
+          setTimeout(() => window.scrollTo(0, window.lastGridScrollY), 0);
+      }
+      return;
+  }
+
+  if (!forceExit && window.scrollY > 50) {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } else {
+    showPage(targetPage);
+  }
+}
+
+// Initial Render
+document.addEventListener('DOMContentLoaded', () => {
+    showPage('home');
+    loadNotifications();
+    injectDynamicFormFields();
+    initCountrySelects();
+    injectGlobalStyles();
+    initSearchUI();
+    window.addEventListener('resize', updateTabIndicator);
+    window.addEventListener('load', updateTabIndicator);
+});
+
+/* EXPOSE FUNCTIONS TO HTML */
+window.showPage = showPage;
+window.googleLogin = googleLogin;
+window.logout = logout;
+window.handleInput = handleInput;
+window.switchTab = switchTab;
+window.setRating = setRating;
+window.previewImage = previewImage;
+window.submitReport = submitReport;
+window.submitRating = submitRating;
+window.renderActivity = renderActivity;
+window.deleteActivityItem = deleteActivityItem;
+window.switchProfileTab = switchProfileTab;
+window.switchHomeTab = switchHomeTab;
+window.switchActivityTab = switchActivityTab;
+window.switchAdminTab = switchAdminTab;
+window.toggleNotifications = toggleNotifications;
+window.openDetails = openDetails;
+window.performSearch = performSearch;
+window.clearSearch = clearSearch;
+window.toggleHistoryLog = toggleHistoryLog;
+window.handleScamTypeChange = handleScamTypeChange;
+window.previewProof = previewProof;
+window.handleBackClick = handleBackClick;
+window.toggleUserVerification = toggleUserVerification;
+window.manualVerifyUser = manualVerifyUser;
+window.toggleUserBan = toggleUserBan;
+window.manualBanUser = manualBanUser;
+window.cancelDeletion = cancelDeletion;
+window.interceptLink = interceptLink;
+window.reportLinkFromModal = reportLinkFromModal;
+window.rateLinkFromModal = rateLinkFromModal;
+window.addBlacklistDomain = addBlacklistDomain;
+window.removeBlacklistDomain = removeBlacklistDomain;
+window.applySuggestion = applySuggestion;
+
+/* MENU TOGGLE */
+function toggleMenu() {
+  const menu = document.getElementById('fullscreen-menu');
+  const btn = document.querySelector('.hamburger-btn');
+  if (menu && btn) {
+    menu.classList.toggle('active');
+    btn.classList.toggle('active');
+    
+    if (menu.classList.contains('active')) {
+      menu.style.height = (menu.scrollHeight + 150) + "px";
+    } else {
+      menu.style.height = "0px";
+    }
+  }
+}
+window.toggleMenu = toggleMenu;
+
+function closeMenu() {
+  const menu = document.getElementById('fullscreen-menu');
+  const btn = document.querySelector('.hamburger-btn');
+  if (menu && menu.classList.contains('active')) {
+    menu.classList.remove('active');
+    if (btn) btn.classList.remove('active');
+    menu.style.height = "0px";
+  }
+}
+
+/* CLOSE MENU ON CLICK OUTSIDE OR LINK/BUTTON INSIDE */
+document.addEventListener('click', (event) => {
+  const menu = document.getElementById('fullscreen-menu');
+  if (menu && menu.classList.contains('active')) {
+    const isClickInsideContent = event.target.closest('.menu-content');
+    const isClickOnButton = event.target.closest('.hamburger-btn');
+    const isLinkOrButtonInside = event.target.closest('.menu-content a') || event.target.closest('.menu-content button');
+    
+    if ((!isClickInsideContent && !isClickOnButton) || isLinkOrButtonInside) {
+      closeMenu();
+    }
+  }
+
+  // Close Notifications on Click Outside
+  const notifDropdown = document.getElementById('notification-dropdown');
+  const notifBtn = document.querySelector('.notification-btn');
+  
+  if (notifDropdown && !notifDropdown.classList.contains('hidden')) {
+      if (!notifDropdown.contains(event.target) && !notifBtn.contains(event.target)) {
+          toggleNotifications();
+      }
+  }
+});
+
+/* FAB CLICK HANDLER */
+function handleFabClick() {
+  const fab = document.querySelector('.floating-pill-btn');
+  if (fab.classList.contains('back-to-top-mode')) {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } else {
+    if (fab.classList.contains('banned-fab')) {
+       const reason = fab.dataset.banReason || 'Violation of Terms';
+       showToast(`Banned: ${reason}`, "error");
+    } else {
+       showPage('report');
+    }
+  }
+}
+window.handleFabClick = handleFabClick;
+
+/* ==========================================
+   INTELLIGENT LINK VERIFICATION
+   ========================================== */
+async function verifyUrl(stringUrl) {
+  let url;
+  
+  // 0. Phone Number Check (Bypass URL validation)
+  if (/^[\+]?[\d\s\-\(\)]{7,20}$/.test(stringUrl) && !/[a-z]/i.test(stringUrl)) {
+      return stringUrl.trim();
+  }
+
+  try {
+    // Auto-prepend https:// if missing
+    if (!/^https?:\/\//i.test(stringUrl)) {
+        stringUrl = 'https://' + stringUrl;
+    }
+    url = new URL(stringUrl);
+  } catch (e) {
+    throw new Error("Invalid URL format. Please check the link.");
+  }
+
+  const domain = url.hostname.toLowerCase();
+  const path = url.pathname;
+
+  // 1. Protocol Check
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    throw new Error("Only HTTP and HTTPS links are allowed.");
+  }
+
+  // 2. Safety Check (IPs & Localhost)
+  if (/^(\d{1,3}\.){3}\d{1,3}$/.test(domain)) {
+     throw new Error("Security Alert: IP address links are not allowed.");
+  }
+  if (domain === 'localhost' || domain.endsWith('.local')) {
+     throw new Error("Local network links are not allowed.");
+  }
+  
+  // 3. FIRESTORE BLACKLIST CHECK
+  try {
+    let checkDomain = domain;
+    if (checkDomain.startsWith('www.')) checkDomain = checkDomain.substring(4);
+
+    // Timeout wrapper to prevent hanging (2s limit)
+    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 2000));
+    const q = query(collection(db, "blacklist"), where("domain", "==", checkDomain));
+    
+    const snapshot = await Promise.race([getDocs(q), timeout]);
+    if (!snapshot.empty) {
+        throw new Error("Security Alert: This domain is blacklisted as a known scam.");
+    }
+  } catch (e) {
+    if (e.message.includes("blacklisted")) throw e;
+    if (e.code === 'permission-denied') {
+        console.warn("⚠️ FIRESTORE RULES MISSING: Add 'allow read: if true;' to the 'blacklist' collection so users can be protected.");
+    } else {
+        console.warn("Blacklist check skipped:", e.message);
+    }
+  }
+
+  // 4. EXTERNAL INTELLIGENCE: DNS Verification (Google Public DNS)
+  // This checks if the domain actually exists in the global registry.
+  try {
+    const dnsResponse = await fetch(`https://dns.google/resolve?name=${domain}`);
+    const dnsData = await dnsResponse.json();
+    
+    // Status 3 means NXDOMAIN (Non-Existent Domain)
+    if (dnsData.Status === 3) {
+        throw new Error("This domain does not exist. Please check for typos.");
+    }
+  } catch (e) {
+    // If the check itself fails (e.g. network block), we assume the link might be invalid
+    if (e.message.includes("domain does not exist")) throw e;
+    console.warn("DNS verification skipped due to network issue.");
+  }
+
+  // 5. INTELLIGENT CONTENT ANALYSIS (Heuristics)
+
+  // A. Block Search Engines & AI Tools (Strict Match)
+  const blockedKeywords = [
+    'google.com', 'www.google.com', 'bing.com', 'yahoo.com', 'duckduckgo.com',
+    'chatgpt.com', 'openai.com', 'ai.com', 'bard.google.com', 'gemini.google.com',
+    'claude.ai', 'poe.com', 'perplexity.ai',
+    'wikipedia.org', 'netflix.com', 'spotify.com'
+  ];
+
+  // Check if domain is exactly one of the blocked domains or a subdomain of them
+  const isBlocked = blockedKeywords.some(d => domain === d || domain.endsWith('.' + d));
+  if (isBlocked) {
+      throw new Error("Links to search engines, AI tools, or general portals are not accepted.");
+  }
+
+  // B. Block Adult & Unsafe Content
+  const adultKeywords = ['pornhub', 'xvideos', 'xnxx', 'xhamster', 'youporn', 'redtube', 'brazzers', 'hentai', 'nude', 'sex'];
+  if (adultKeywords.some(k => domain.includes(k)) || domain.endsWith('.xxx') || domain.endsWith('.adult')) {
+      throw new Error("Security Alert: This link is flagged as unsafe or inappropriate.");
+  }
+
+  // C. Enforce Deep Links for Social Media & Marketplaces
+  const platformRoots = [
+      'instagram.com', 'facebook.com', 'twitter.com', 'x.com', 'tiktok.com', 
+      'linkedin.com', 'pinterest.com', 'snapchat.com', 'reddit.com', 'tumblr.com',
+      'vimeo.com', 'twitch.tv', // YouTube removed to allow channel reports
+      'ebay.', 'etsy.', 'amazon.', 'aliexpress.', 'dhgate.', 'temu.', 'shopee.', 'mercari.'
+  ];
+
+  if (platformRoots.some(p => domain.includes(p)) && (path === '/' || path.length < 2)) {
+      throw new Error("Please provide a specific profile, shop, or video link, not the platform homepage.");
+  }
+
+  // D. Entropy Check (Detect Random Keys smashing e.g. "asdfghjkl.com")
+  const parts = domain.split('.');
+  let mainPart = parts.length > 1 ? parts[parts.length - 2] : parts[0];
+  // Handle co.uk etc.
+  if (parts.length > 2 && (parts[parts.length-2].length === 2 || parts[parts.length-1].length === 2)) {
+      mainPart = parts[parts.length - 3] || mainPart;
+  }
+  
+  if (calculateEntropy(mainPart) > 4.2 && mainPart.length > 10) {
+      throw new Error("Link rejected: Domain name appears randomly generated.");
+  }
+
+  return stringUrl; // Return normalized URL
+}
+
+/* Helper: Calculate Shannon Entropy of a string */
+function calculateEntropy(str) {
+    const len = str.length;
+    const frequencies = {};
+    for (let i = 0; i < len; i++) {
+        const char = str[i];
+        frequencies[char] = (frequencies[char] || 0) + 1;
+    }
+    let entropy = 0;
+    for (const char in frequencies) {
+        const p = frequencies[char] / len;
+        entropy -= p * Math.log2(p);
+    }
+    return entropy;
+}
+
+/* MASONRY LAYOUT HELPERS */
+function resizeGridItem(item) {
+  if (item.offsetParent === null) return;
+  const grid = item.parentElement;
+  if (!grid) return;
+  
+  const styles = window.getComputedStyle(grid);
+  const rowHeightVal = parseInt(styles.getPropertyValue('grid-auto-rows'));
+  const rowGapVal = parseInt(styles.getPropertyValue('gap'));
+  
+  const rowHeight = isNaN(rowHeightVal) ? 0 : rowHeightVal;
+  const rowGap = isNaN(rowGapVal) ? 0 : rowGapVal;
+  
+  if (rowHeight === 0) return;
+
+  const rowSpan = Math.ceil((item.scrollHeight + rowGap) / (rowHeight + rowGap));
+  item.style.gridRowEnd = "span " + rowSpan;
+}
+
+function resizeAllGridItems() {
+  const allItems = document.getElementsByClassName("mini-card");
+  for (let x = 0; x < allItems.length; x++) {
+    resizeGridItem(allItems[x]);
+  }
+}
+window.addEventListener("resize", resizeAllGridItems);
+
+/* SKELETON HELPER */
+function getSkeletonHTML(count) {
+  let html = '';
+  for (let i = 0; i < count; i++) {
+    html += `
+      <div class="skeleton-card">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div class="skeleton" style="width:32px; height:32px; border-radius:50%;"></div>
+          <div class="skeleton" style="width:120px; height:20px;"></div>
+        </div>
+        <div class="skeleton" style="width:60%; height:16px;"></div>
+        <div class="skeleton" style="width:100%; height:100px; border-radius:6px;"></div>
+        <div class="skeleton" style="width:100%; height:36px; border-radius:6px; margin-top:auto;"></div>
+      </div>
+    `;
+  }
+  return html;
+}
+/* SCROLL LISTENER FOR STICKY SEARCH & MENU CLOSE */
+window.addEventListener('scroll', () => {
+  closeMenu();
+
+  const searchBox = document.querySelector('.search-box');
+  const homeSection = document.getElementById('home');
+  const fab = document.querySelector('.floating-pill-btn');
+  const reportSection = document.getElementById('report');
+  
+  // Sticky Search Logic
+  if (searchBox && homeSection && !homeSection.classList.contains('hidden')) {
+    if (window.scrollY > 150) {
+      searchBox.classList.add('sticky-search');
+    } else {
+      searchBox.classList.remove('sticky-search');
+    }
+  }
+
+  // FAB Scroll Logic (Zoom out when scrolling down, Zoom in at top)
+  const isHomePage = homeSection && !homeSection.classList.contains('hidden');
+
+  if (fab) {
+    if (isHomePage) {
+      fab.classList.remove('hidden-fab');
+      if (window.scrollY > 300) {
+        fab.classList.add('back-to-top-mode');
+      } else {
+        fab.classList.remove('back-to-top-mode');
+      }
+    } else {
+      fab.classList.add('hidden-fab');
+      fab.classList.remove('back-to-top-mode');
+    }
+  }
+
+  // Back Button Logic (Sticky & Rotate)
+  const activeSection = document.querySelector('section:not(.hidden)');
+  if (activeSection && activeSection.id !== 'home') {
+      const backBtn = activeSection.querySelector('.back-btn');
+      if (backBtn) {
+          if (window.scrollY > 20) {
+              backBtn.classList.add('sticky-back', 'rotate-up');
+          } else {
+              backBtn.classList.remove('sticky-back', 'rotate-up');
+          }
+      }
+  }
+});
+
+/* ==========================================
+   TOAST NOTIFICATION HELPER
+   ========================================== */
+function showToast(message, type = 'success') {
+  let toast = document.getElementById('global-toast');
+  
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'global-toast';
+    toast.className = 'toast-notification';
+    document.body.appendChild(toast);
+  }
+
+  // Icon & Color Selection
+  let icon = '<svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
+  let color = '#00e676'; // Success Green
+  
+  if (type === 'error') {
+      icon = '<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>';
+      color = '#ff4d4d';
+  } else if (type === 'info') {
+      icon = '<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>';
+      color = '#8b5cf6';
+  }
+
+  toast.innerHTML = `
+    <div class="toast-icon" style="background:${color}22; color:${color}">${icon}</div>
+    <span>${message}</span>
+  `;
+
+  // Trigger Animation
+  toast.classList.remove('active');
+  void toast.offsetWidth; // Force reflow
+  toast.classList.add('active');
+
+  // Auto Hide
+  if (toast.timeout) clearTimeout(toast.timeout);
+  toast.timeout = setTimeout(() => {
+    toast.classList.remove('active');
+  }, 3500);
+}
+window.showToast = showToast;
+
+/* ==========================================
+   CUSTOM CONFIRM MODAL
+   ========================================== */
+function showConfirm(message, title = "Confirm Action", isDanger = false) {
+  return new Promise((resolve) => {
+    let overlay = document.getElementById('custom-confirm-modal');
+    
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'custom-confirm-modal';
+      overlay.className = 'custom-modal-overlay';
+      overlay.innerHTML = `
+        <div class="custom-modal">
+          <div class="modal-title" id="modal-title"></div>
+          <div class="modal-message" id="modal-message"></div>
+          <div class="modal-actions">
+            <button class="modal-btn btn-cancel" id="modal-cancel">Cancel</button>
+            <button class="modal-btn btn-confirm" id="modal-confirm">Confirm</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+    }
+
+    const titleEl = document.getElementById('modal-title');
+    const msgEl = document.getElementById('modal-message');
+    const confirmBtn = document.getElementById('modal-confirm');
+    const cancelBtn = document.getElementById('modal-cancel');
+
+    titleEl.textContent = title;
+    msgEl.innerHTML = message;
+    
+    confirmBtn.className = isDanger ? 'modal-btn btn-confirm danger' : 'modal-btn btn-confirm';
+
+    const close = (result) => {
+      overlay.classList.remove('active');
+      confirmBtn.onclick = null;
+      cancelBtn.onclick = null;
+      resolve(result);
+    };
+
+    confirmBtn.onclick = () => close(true);
+    cancelBtn.onclick = () => close(false);
+    
+    requestAnimationFrame(() => overlay.classList.add('active'));
+  });
+}
+window.showConfirm = showConfirm;
+
+/* ==========================================
+   SHARE HELPER
+   ========================================== */
+function shareItem(url, title, status) {
+  const shareData = {
+    title: 'IsItAScam Report',
+    text: `Check this out: ${title} (${url}) is flagged as ${status}.`,
+    url: url
+  };
+  
+  if (navigator.share) {
+    navigator.share(shareData).catch(console.error);
+  } else {
+    copyToClipboard(`${shareData.text} ${shareData.url}`);
+    showToast("Link copied to clipboard", "info");
+  }
+}
+window.shareItem = shareItem;
+
+/* ==========================================
+   CLIPBOARD HELPER
+   ========================================== */
+function copyToClipboard(text) {
+  if (!navigator.clipboard) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.select();
+    try { document.execCommand('copy'); showToast("Copied to clipboard", "success"); } 
+    catch (err) { showToast("Failed to copy", "error"); }
+    document.body.removeChild(textArea);
+    return;
+  }
+  navigator.clipboard.writeText(text).then(() => showToast("Copied to clipboard", "success"))
+    .catch(err => showToast("Failed to copy", "error"));
+}
+window.copyToClipboard = copyToClipboard;
+
+/* ==========================================
+   SECURITY HELPER (XSS PREVENTION)
+   ========================================== */
+function escapeHTML(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+/* ==========================================
+   ADMIN FILTER
+   ========================================== */
+function filterAdminList() {
+  const input = document.getElementById('admin-search-input');
+  if (!input) return;
+  const query = input.value.toLowerCase();
+  
+  const lists = [document.getElementById('admin-user-list'), document.getElementById('admin-banned-list')];
+  
+  lists.forEach(list => {
+      if (!list) return;
+      const cards = list.querySelectorAll('.mini-card');
+      cards.forEach(card => {
+          card.classList.toggle('hidden', !card.textContent.toLowerCase().includes(query));
+      });
+  });
+}
+window.filterAdminList = filterAdminList;
+
+function triggerShake(elements) {
+  if (!Array.isArray(elements)) elements = [elements];
+  elements.forEach(el => {
+    if (el) {
+      el.classList.remove('shake');
+      void el.offsetWidth; // Force reflow
+      el.classList.add('shake');
+      setTimeout(() => el.classList.remove('shake'), 500);
+    }
+  });
+}
