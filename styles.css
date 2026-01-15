@@ -1888,17 +1888,29 @@ form:not(.hidden),
 ===================== */
 @media (max-width: 600px) {
   .navbar {
-    padding: 10px 14px;
+    padding: 8px 16px;
+    min-height: 60px;
   }
   .navbar .logo img {
-    height: 36px;
+    height: 32px;
   }
   .navbar nav a {
-    margin-left: 10px;
+    margin-left: 12px;
   }
   .hamburger-btn {
-    margin-right: 8px;
-    padding: 5px;
+    margin-right: 12px;
+    padding: 4px;
+    gap: 4px;
+  }
+  .hamburger-btn span {
+    width: 20px;
+    height: 2px;
+  }
+  .hamburger-btn.active span:nth-child(1) {
+    transform: translateY(6px) rotate(45deg);
+  }
+  .hamburger-btn.active span:nth-child(3) {
+    transform: translateY(-6px) rotate(-45deg);
   }
   /* Compact Home Button: Hide text, keep icon */
   .navbar nav a[onclick*="home"] {
@@ -1906,7 +1918,50 @@ form:not(.hidden),
     gap: 0 !important;
   }
   .navbar nav a[onclick*="home"] svg {
-    width: 26px;
-    height: 26px;
+    width: 24px;
+    height: 24px;
+  }
+}
+
+/* =====================
+   NAVBAR IMPROVEMENTS
+===================== */
+.navbar nav {
+  gap: 24px; /* Better spacing between Home and Profile */
+}
+
+.navbar nav a {
+  margin-left: 0 !important; /* Reset old margins */
+}
+
+/* Modern Home Button */
+.navbar nav a[onclick*="home"] {
+  color: #f0f6fc;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+.navbar nav a[onclick*="home"]:hover {
+  background: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+  transform: translateY(-1px);
+}
+
+/* Mobile Adjustments for New Home Button */
+@media (max-width: 600px) {
+  .navbar nav {
+    gap: 12px;
+  }
+  .navbar nav a[onclick*="home"] span {
+    display: none; /* Hide text on mobile */
+  }
+  .navbar nav a[onclick*="home"] {
+    padding: 6px;
+  }
+  /* Prevent iOS Zoom on Focus */
+  .search-box input {
+    font-size: 16px !important;
   }
 }

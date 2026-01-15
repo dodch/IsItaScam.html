@@ -1383,16 +1383,30 @@ function initSearchUI() {
         }
     });
 
-    // On focus, especially on mobile, scroll the input into a safe view
-    input.addEventListener('focus', () => {
+    // On focus, especially on mobile, scroll to trigger sticky mode
+    input.addEventListener('focus', (e) => {
+        // Mobile: If not sticky yet, scroll first, then focus
+        if (window.innerWidth <= 600 && window.scrollY < 150) {
+            input.blur(); // Dismiss keyboard/focus immediately
+            window.scrollTo({ top: 160, behavior: 'smooth' });
+            
+            // Wait for smooth scroll to complete before activating keyboard
+            setTimeout(() => {
+                input.focus();
+            }, 550);
+            return;
+        }
+
         const val = input.value.trim();
         if (val.length === 0) renderRecent();
-
-        // Use a timeout to allow the on-screen keyboard to appear.
-        setTimeout(() => {
-            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 300);
     });
+
+    // Hide keyboard on user scroll
+    window.addEventListener('touchmove', () => {
+        if (document.activeElement === input) {
+            input.blur();
+        }
+    }, { passive: true });
 
     // Reposition on scroll/resize
     window.addEventListener('scroll', () => {
@@ -5562,6 +5576,22 @@ document.addEventListener('DOMContentLoaded', () => {
     initSearchUI();
     window.addEventListener('resize', updateTabIndicator);
     window.addEventListener('load', updateTabIndicator);
+
+    // Logo Click -> Home
+    const logo = document.querySelector('.navbar .logo');
+    if (logo) {
+        logo.style.cursor = 'pointer';
+        logo.onclick = (e) => { e.preventDefault(); showPage('home'); };
+    }
+
+    // Modern Home Button Icon
+    const homeBtn = document.querySelector('.navbar nav a[onclick*="home"]');
+    if (homeBtn) {
+        homeBtn.innerHTML = `<svg viewBox="0 0 24 24" style="width:22px; height:22px; fill:currentColor;"><path d="M12 5.69l5 4.5V18h-2v-6H9v6H7v-7.81l5-4.5M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3z"/></svg><span>Home</span>`;
+        homeBtn.style.display = 'inline-flex';
+        homeBtn.style.alignItems = 'center';
+        homeBtn.style.gap = '8px';
+    }
 });
 
 /* EXPOSE FUNCTIONS TO HTML */
