@@ -4,7 +4,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, deleteDoc, doc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, deleteDoc, doc, onSnapshot, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
 
 // Your web app's Firebase configuration
@@ -64,6 +64,28 @@ function showPage(page, defaultTab = 'profile', activitySubTab = 'reports') {
 
   // Refresh reports when going home
   if (page === 'home') {
+    // Reset Search UI
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) searchInput.value = '';
+    
+    const sortSelect = document.getElementById('sort-filter');
+    if (sortSelect) sortSelect.value = 'trending';
+    
+    const countrySelect = document.getElementById('country-filter');
+    if (countrySelect) countrySelect.value = 'GLOBAL';
+    
+    const verifiedBtn = document.getElementById('verified-filter-btn');
+    if (verifiedBtn) {
+        verifiedBtn.classList.remove('active');
+        Object.assign(verifiedBtn.style, { background: '#0d1117', color: '#8b949e', borderColor: '#30363d' });
+    }
+    
+    const clearBtn = document.getElementById('clear-search-btn');
+    if (clearBtn) clearBtn.classList.add('hidden');
+    
+    const searchLabel = document.getElementById('search-results-label');
+    if (searchLabel) searchLabel.classList.add('hidden');
+
     // Kick off search index population if it hasn't started
     if (!searchIndexReadyPromise) {
         searchIndexReadyPromise = populateSearchIndex();
@@ -284,6 +306,169 @@ function initCountrySelects() {
     });
 }
 
+/* COUNTRY FILTER & IP DETECTION */
+async function initCountryFilter() {
+    const sortSelect = document.getElementById('sort-filter');
+    if (!sortSelect || document.getElementById('country-filter')) return;
+
+    const container = sortSelect.parentNode;
+    const select = document.createElement('select');
+    select.id = 'country-filter';
+    
+    // Style to match the dark theme
+    Object.assign(select.style, {
+        padding: '8px',
+        borderRadius: '6px',
+        background: '#0d1117',
+        color: '#eaeaea',
+        border: '1px solid #30363d',
+        marginLeft: '10px',
+        cursor: 'pointer'
+    });
+
+    // Add Global Option (Top)
+    let optionsHTML = `<option value="GLOBAL">🌍 Global (All)</option>`;
+    optionsHTML += countryCodes.map(c => `<option value="${c.iso}">${c.flag} ${c.name}</option>`).join('');
+    select.innerHTML = optionsHTML;
+
+    select.addEventListener('change', performSearch);
+    container.insertBefore(select, sortSelect.nextSibling);
+
+    // Verified Filter Button
+    const verifiedBtn = document.createElement('button');
+    verifiedBtn.id = 'verified-filter-btn';
+    verifiedBtn.innerHTML = `<svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor; margin-right:4px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg> Verified`;
+    verifiedBtn.title = "Show Verified Sellers Only";
+    Object.assign(verifiedBtn.style, {
+        padding: '8px 12px',
+        borderRadius: '6px',
+        background: '#0d1117',
+        color: '#8b949e',
+        border: '1px solid #30363d',
+        marginLeft: '10px',
+        cursor: 'pointer',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '0.9em',
+        fontWeight: '600',
+        transition: 'all 0.2s ease'
+    });
+    verifiedBtn.onclick = () => {
+        const isActive = verifiedBtn.classList.toggle('active');
+        Object.assign(verifiedBtn.style, isActive ? { background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', borderColor: '#38bdf8' } : { background: '#0d1117', color: '#8b949e', borderColor: '#30363d' });
+        performSearch();
+    };
+    container.insertBefore(verifiedBtn, select.nextSibling);
+
+    // Clear Filters Button
+    const clearBtn = document.createElement('button');
+    clearBtn.innerHTML = `<svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>`;
+    clearBtn.title = "Reset Filters";
+    Object.assign(clearBtn.style, {
+        padding: '8px',
+        borderRadius: '6px',
+        background: '#0d1117',
+        color: '#8b949e',
+        border: '1px solid #30363d',
+        marginLeft: '10px',
+        cursor: 'pointer',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+    });
+    clearBtn.onmouseover = () => { clearBtn.style.color = '#eaeaea'; clearBtn.style.borderColor = '#8b5cf6'; };
+    clearBtn.onmouseout = () => { clearBtn.style.color = '#8b949e'; clearBtn.style.borderColor = '#30363d'; };
+    clearBtn.onclick = () => {
+        document.getElementById('search-input').value = '';
+        sortSelect.value = 'trending';
+        select.value = 'GLOBAL';
+        verifiedBtn.classList.remove('active');
+        Object.assign(verifiedBtn.style, { background: '#0d1117', color: '#8b949e', borderColor: '#30363d' });
+        performSearch();
+    };
+    container.insertBefore(clearBtn, verifiedBtn.nextSibling);
+
+    // Share Search Button
+    const shareBtn = document.createElement('button');
+    shareBtn.innerHTML = `<svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>`;
+    shareBtn.title = "Share Search";
+    Object.assign(shareBtn.style, {
+        padding: '8px',
+        borderRadius: '6px',
+        background: '#0d1117',
+        color: '#8b949e',
+        border: '1px solid #30363d',
+        marginLeft: '10px',
+        cursor: 'pointer',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+    });
+    shareBtn.onmouseover = () => { shareBtn.style.color = '#eaeaea'; shareBtn.style.borderColor = '#8b5cf6'; };
+    shareBtn.onmouseout = () => { shareBtn.style.color = '#8b949e'; shareBtn.style.borderColor = '#30363d'; };
+    shareBtn.onclick = () => {
+        const q = document.getElementById('search-input').value.trim();
+        const s = sortSelect.value;
+        const c = select.value;
+        const v = verifiedBtn.classList.contains('active');
+        const url = new URL(window.location.href);
+        if (q) url.searchParams.set('q', q); else url.searchParams.delete('q');
+        if (s && s !== 'trending') url.searchParams.set('sort', s); else url.searchParams.delete('sort');
+        if (c && c !== 'GLOBAL') url.searchParams.set('country', c); else url.searchParams.delete('country');
+        if (v) url.searchParams.set('verified', 'true'); else url.searchParams.delete('verified');
+        
+        const shareData = {
+            title: 'IsItAScam Search',
+            text: 'Check out these search results on IsItAScam',
+            url: url.toString()
+        };
+
+        if (navigator.share) {
+            navigator.share(shareData).catch(console.error);
+        } else {
+            copyToClipboard(url.toString());
+            showToast("Search link copied!", "success");
+        }
+    };
+    container.insertBefore(shareBtn, clearBtn.nextSibling);
+
+    // Check URL Params
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramQ = urlParams.get('q');
+    const paramSort = urlParams.get('sort');
+    const paramCountry = urlParams.get('country');
+    const paramVerified = urlParams.get('verified');
+    
+    if (paramQ || paramSort || paramCountry || paramVerified) {
+        if (paramQ) document.getElementById('search-input').value = paramQ;
+        if (paramSort) sortSelect.value = paramSort;
+        if (paramCountry) select.value = paramCountry;
+        if (paramVerified === 'true') {
+            verifiedBtn.classList.add('active');
+            Object.assign(verifiedBtn.style, { background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', borderColor: '#38bdf8' });
+        }
+        performSearch();
+    }
+
+    // Auto-detect User Country via IP (Only if no URL country param)
+    if (!paramCountry) {
+        try {
+            const res = await fetch('https://ipapi.co/json/');
+            const data = await res.json();
+            if (data.country_code) {
+                const userIso = data.country_code.toLowerCase();
+                if (countryCodes.some(c => c.iso === userIso)) {
+                    select.value = userIso;
+                    performSearch(); // Refresh with local filter
+                }
+            }
+        } catch (e) {
+            console.warn("Country detection failed, defaulting to Global.");
+        }
+    }
+}
+
 /* INJECT GLOBAL STYLES */
 function injectGlobalStyles() {
   const styleId = 'global-dynamic-styles';
@@ -300,29 +485,6 @@ function injectGlobalStyles() {
       border-color: #8b5cf6 !important;
       box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
     }
-    .search-suggestions {
-      position: absolute;
-      top: 100%;
-      left: 0;
-      right: 0;
-      background: #161b22;
-      border: 1px solid #30363d;
-      border-radius: 0 0 8px 8px;
-      z-index: 1000;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-      overflow: hidden;
-    }
-    .suggestion-item {
-      padding: 10px 15px;
-      display: flex; align-items: center; gap: 10px;
-      cursor: pointer; border-bottom: 1px solid #21262d;
-    }
-    .suggestion-item:hover { background: #21262d; }
-    .suggestion-item:last-child { border-bottom: none; }
-    .s-icon { font-size: 1.2em; }
-    .s-info { flex: 1; overflow: hidden; }
-    .s-name { color: #f0f6fc; font-weight: 600; font-size: 0.9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .s-url { color: #8b949e; font-size: 0.75em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   `;
   document.head.appendChild(style);
 }
@@ -715,10 +877,12 @@ function switchAdminTab(tab) {
   const verifiedSection = document.getElementById('admin-verified-section');
   const bannedSection = document.getElementById('admin-banned-section');
   const blacklistSection = document.getElementById('admin-blacklist-section');
+  const abuseSection = document.getElementById('admin-abuse-section');
   
   const verifiedBtn = document.getElementById('admin-verified-tab-btn');
   const bannedBtn = document.getElementById('admin-banned-tab-btn');
   const blacklistBtn = document.getElementById('admin-blacklist-tab-btn');
+  const abuseBtn = document.getElementById('admin-abuse-tab-btn');
   
   const subtitle = document.getElementById('admin-dashboard-subtitle');
 
@@ -728,10 +892,12 @@ function switchAdminTab(tab) {
   verifiedSection.classList.add('hidden');
   bannedSection.classList.add('hidden');
   if (blacklistSection) blacklistSection.classList.add('hidden');
+  if (abuseSection) abuseSection.classList.add('hidden');
   
   verifiedBtn.classList.remove('active');
   bannedBtn.classList.remove('active');
   if (blacklistBtn) blacklistBtn.classList.remove('active');
+  if (abuseBtn) abuseBtn.classList.remove('active');
 
   if (tab === 'verified') {
     verifiedSection.classList.remove('hidden');
@@ -760,6 +926,16 @@ function switchAdminTab(tab) {
         blacklistSection.classList.remove('animate-slide-left', 'animate-slide-right');
         void blacklistSection.offsetWidth;
         blacklistSection.classList.add('animate-slide-right');
+    }
+  } else if (tab === 'abuse') {
+    if (abuseSection) {
+        abuseSection.classList.remove('hidden');
+        if (abuseBtn) abuseBtn.classList.add('active');
+        if (subtitle) subtitle.innerText = "Review and resolve abuse reports.";
+        
+        abuseSection.classList.remove('animate-slide-left', 'animate-slide-right');
+        void abuseSection.offsetWidth;
+        abuseSection.classList.add('animate-slide-right');
     }
   }
   requestAnimationFrame(updateTabIndicator);
@@ -791,6 +967,16 @@ async function populateSearchIndex() {
         const ratings = [];
         ratingsSnap.forEach(doc => ratings.push(doc.data()));
         SearchSystem.ingest(ratings, 'rating');
+        
+        // Calculate Trending (Most Reported URLs)
+        const counts = {};
+        reports.forEach(r => {
+            const u = r.url ? r.url.toLowerCase() : '';
+            if(u) counts[u] = (counts[u] || 0) + 1;
+        });
+        
+        const topUrls = Object.keys(counts).sort((a, b) => counts[b] - counts[a]).slice(0, 5);
+        SearchSystem.trending = topUrls.map(url => SearchSystem.index.find(i => i.url === url)).filter(Boolean);
 
     } catch (error) {
         console.error("Failed to populate search index:", error);
@@ -800,6 +986,7 @@ async function populateSearchIndex() {
 
 const SearchSystem = {
     index: [],
+    trending: [],
     
     // Knowledge Graph / Synonyms for "AI" Understanding
     synonyms: {
@@ -864,6 +1051,52 @@ const SearchSystem = {
         return score;
     },
 
+    // Levenshtein Distance for Typos
+    levenshtein: function(a, b) {
+        if (a.length === 0) return b.length;
+        if (b.length === 0) return a.length;
+        const matrix = [];
+        for (let i = 0; i <= b.length; i++) { matrix[i] = [i]; }
+        for (let j = 0; j <= a.length; j++) { matrix[0][j] = j; }
+        for (let i = 1; i <= b.length; i++) {
+            for (let j = 1; j <= a.length; j++) {
+                if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                    matrix[i][j] = matrix[i - 1][j - 1];
+                } else {
+                    matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1));
+                }
+            }
+        }
+        return matrix[b.length][a.length];
+    },
+
+    // Fuzzy Search for "Did you mean?"
+    getDidYouMean: function(query) {
+        if (!query || query.length < 3) return null;
+        const lowerQ = query.toLowerCase();
+        let bestMatch = null;
+        let minDist = 4; // Max distance allowed
+
+        this.index.forEach(item => {
+            // Check Name
+            const distName = this.levenshtein(lowerQ, item.name);
+            if (distName < minDist) {
+                minDist = distName;
+                bestMatch = item;
+            }
+            // Check URL parts (e.g. username)
+            let user = item.url;
+            try { user = extractUsername(item.url).toLowerCase(); } catch(e) {}
+            
+            const distUser = this.levenshtein(lowerQ, user);
+            if (distUser < minDist) {
+                minDist = distUser;
+                bestMatch = item;
+            }
+        });
+        return bestMatch;
+    },
+
     // Get Suggestions
     getSuggestions: function(query) {
         if (!query || query.length < 2) return [];
@@ -881,12 +1114,38 @@ const SearchSystem = {
             .sort((a, b) => b.score - a.score)
             .slice(0, 5) // Top 5 suggestions
             .map(r => r.item);
+    },
+
+    // Get Counts for Tab Switching
+    getCounts: function(query) {
+        if (!query) return { reports: 0, ratings: 0 };
+        const tokens = query.toLowerCase().split(/\s+/).filter(t => t.length > 0);
+        
+        let reports = 0;
+        let ratings = 0;
+
+        this.index.forEach(item => {
+            let desc = '';
+            if (item.type === 'report') desc = item.data.description || '';
+            else if (item.type === 'rating') desc = (item.data.good || '') + ' ' + (item.data.bad || '');
+            
+            const score = this.score({ ...item, desc: desc.toLowerCase() }, tokens);
+            
+            if (score > 0) {
+                if (item.type === 'report') reports++;
+                else if (item.type === 'rating') ratings++;
+            }
+        });
+        return { reports, ratings };
     }
 };
 
 function initSearchUI() {
     const input = document.getElementById('search-input');
     if (!input) return;
+
+    // Disable browser autocomplete to prevent overlap
+    input.setAttribute('autocomplete', 'off');
 
     // Create Suggestions Container
     let suggestions = document.getElementById('search-suggestions');
@@ -899,16 +1158,90 @@ function initSearchUI() {
 
     const positionSuggestions = () => {
         const rect = input.getBoundingClientRect();
-        suggestions.style.top = `${rect.bottom + window.scrollY}px`;
+        suggestions.style.top = `${rect.bottom + window.scrollY + 12}px`;
         suggestions.style.left = `${rect.left + window.scrollX}px`;
         suggestions.style.width = `${rect.width}px`;
+    };
+
+    const renderRecent = () => {
+        const searches = JSON.parse(localStorage.getItem('recent_searches') || '[]');
+        const trending = SearchSystem.trending || [];
+        
+        if (searches.length === 0 && trending.length === 0) {
+            suggestions.classList.add('hidden');
+            return;
+        }
+        
+        let html = '';
+
+        if (searches.length > 0) {
+            html += `
+            <div style="padding:8px 12px; font-size:0.85em; color:#8b949e; font-weight:600; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #30363d;">
+                <span>Recent Searches</span>
+                <button id="clear-recent-btn" style="background:none; border:none; color:#8b949e; cursor:pointer; font-size:inherit;">Clear</button>
+            </div>
+            ` + searches.map(s => `
+            <div class="suggestion-item recent-item" data-val="${escapeHTML(s)}">
+                <span class="s-icon" style="color:#8b949e; display:flex; align-items:center; justify-content:center;">
+                    <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+                </span>
+                <div class="s-info">
+                    <div class="s-name" style="color:#c9d1d9;">${escapeHTML(s)}</div>
+                </div>
+            </div>
+            `).join('');
+        }
+
+        if (trending.length > 0) {
+             html += `
+            <div style="padding:8px 12px; font-size:0.85em; color:#8b5cf6; font-weight:600; border-bottom:1px solid #30363d; margin-top:${searches.length ? '0' : '0'}; border-top:${searches.length ? '1px solid #30363d' : 'none'};">
+                Trending Now 📈
+            </div>
+            ` + trending.map(m => {
+                const icon = m.type === 'report' 
+                    ? `<svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M15.73 3H8.27L3 8.27v7.46L8.27 21h7.46L21 15.73V8.27L15.73 3zM12 17.3c-.72 0-1.3-.58-1.3-1.3 0-.72.58-1.3 1.3-1.3.72 0 1.3.58 1.3 1.3 0 .72-.58 1.3-1.3 1.3zm1-4.3h-2V7h2v6z"/></svg>`
+                    : `<svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`;
+                const iconClass = m.type === 'report' ? 'report-icon' : 'rating-icon';
+                const display = m.data.displayName || m.data.realName || extractUsername(m.url);
+                return `
+                    <div class="suggestion-item trending-item" onclick="applySuggestion('${escapeHTML(m.url)}', '${m.type}')">
+                        <span class="s-icon ${iconClass}" style="display:flex; align-items:center; justify-content:center;">${icon}</span>
+                        <div class="s-info">
+                            <div class="s-name">${escapeHTML(display)}</div>
+                            <div class="s-url" style="word-break: break-all;">${escapeHTML(m.url)}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        suggestions.innerHTML = html;
+        
+        suggestions.querySelectorAll('.recent-item').forEach(el => {
+            el.onclick = () => applySuggestion(el.dataset.val);
+        });
+
+        const clearBtn = document.getElementById('clear-recent-btn');
+        if (clearBtn) {
+            clearBtn.onclick = (e) => {
+                e.stopPropagation();
+                localStorage.removeItem('recent_searches');
+                renderRecent();
+            };
+            clearBtn.onmouseover = () => clearBtn.style.color = '#ff4d4d';
+            clearBtn.onmouseout = () => clearBtn.style.color = '#8b949e';
+        }
+
+        positionSuggestions();
+        suggestions.classList.remove('hidden');
     };
 
     // Input Listener
     input.addEventListener('input', async (e) => {
         const val = e.target.value.trim();
         if (val.length < 2) {
-            suggestions.classList.add('hidden');
+            if (val.length === 0) renderRecent();
+            else suggestions.classList.add('hidden');
             return;
         }
 
@@ -920,14 +1253,17 @@ function initSearchUI() {
         const matches = SearchSystem.getSuggestions(val);
         if (matches.length > 0) {
             suggestions.innerHTML = matches.map(m => {
-                const icon = m.type === 'report' ? '🚨' : '⭐';
+                const icon = m.type === 'report' 
+                    ? `<svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M15.73 3H8.27L3 8.27v7.46L8.27 21h7.46L21 15.73V8.27L15.73 3zM12 17.3c-.72 0-1.3-.58-1.3-1.3 0-.72.58-1.3 1.3-1.3.72 0 1.3.58 1.3 1.3 0 .72-.58 1.3-1.3 1.3zm1-4.3h-2V7h2v6z"/></svg>`
+                    : `<svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`;
+                const iconClass = m.type === 'report' ? 'report-icon' : 'rating-icon';
                 const display = m.data.displayName || m.data.realName || extractUsername(m.url);
                 return `
-                    <div class="suggestion-item" onclick="applySuggestion('${escapeHTML(m.url)}')">
-                        <span class="s-icon">${icon}</span>
+                    <div class="suggestion-item" onclick="applySuggestion('${escapeHTML(m.url)}', '${m.type}')">
+                        <span class="s-icon ${iconClass}" style="display:flex; align-items:center; justify-content:center;">${icon}</span>
                         <div class="s-info">
                             <div class="s-name">${escapeHTML(display)}</div>
-                            <div class="s-url">${escapeHTML(m.url)}</div>
+                            <div class="s-url" style="word-break: break-all;">${escapeHTML(m.url)}</div>
                         </div>
                     </div>
                 `;
@@ -935,8 +1271,42 @@ function initSearchUI() {
             positionSuggestions();
             suggestions.classList.remove('hidden');
         } else {
-            suggestions.classList.add('hidden');
+            const fuzzy = SearchSystem.getDidYouMean(val);
+            if (fuzzy) {
+                const display = fuzzy.data.displayName || fuzzy.data.realName || extractUsername(fuzzy.url);
+                suggestions.innerHTML = `
+                    <div class="suggestion-item no-results" style="border-bottom:1px solid #30363d; color:#8b949e;">No exact matches found.</div>
+                    <div class="suggestion-item" onclick="applySuggestion('${escapeHTML(fuzzy.url)}', '${fuzzy.type}')">
+                        <span class="s-icon" style="display:flex; align-items:center; justify-content:center;">
+                            <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:#8b5cf6;"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7zm2.85 11.1l-.85.6V16h-4v-2.3l-.85-.6C7.8 12.16 7 10.63 7 9c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.63-.8 3.16-2.15 4.1z"/></svg>
+                        </span>
+                        <div class="s-info">
+                            <div class="s-name" style="color:#c9d1d9;">Did you mean: <strong style="color:#8b5cf6;">${escapeHTML(display)}</strong>?</div>
+                        </div>
+                    </div>
+                `;
+                positionSuggestions();
+                suggestions.classList.remove('hidden');
+            } else 
+            if (val.length >= 2) {
+                suggestions.innerHTML = `<div class="suggestion-item no-results">No matches found for "${escapeHTML(val)}"</div>`;
+                positionSuggestions();
+                suggestions.classList.remove('hidden');
+            } else {
+                suggestions.classList.add('hidden');
+            }
         }
+    });
+
+    // On focus, especially on mobile, scroll the input into a safe view
+    input.addEventListener('focus', () => {
+        const val = input.value.trim();
+        if (val.length === 0) renderRecent();
+
+        // Use a timeout to allow the on-screen keyboard to appear.
+        setTimeout(() => {
+            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
     });
 
     // Reposition on scroll/resize
@@ -955,15 +1325,38 @@ function initSearchUI() {
     });
     
     // Hide on Enter
-    input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') suggestions.classList.add('hidden');
+    input.addEventListener('keydown', async (e) => {
+        if (e.key === 'Enter') {
+            suggestions.classList.add('hidden');
+            const val = input.value.trim();
+            
+            if (val) {
+                if (searchIndexReadyPromise) await searchIndexReadyPromise;
+                
+                const counts = SearchSystem.getCounts(val);
+                
+                if (counts.reports > 0 && counts.ratings === 0) {
+                    switchHomeTab('reports');
+                } else if (counts.ratings > 0 && counts.reports === 0) {
+                    switchHomeTab('ratings');
+                }
+            }
+            performSearch();
+        }
     });
 }
 
-function applySuggestion(url) {
+function applySuggestion(url, type) {
     const input = document.getElementById('search-input');
     input.value = url;
     document.getElementById('search-suggestions').classList.add('hidden');
+    
+    if (type === 'rating') {
+        switchHomeTab('ratings');
+    } else if (type === 'report') {
+        switchHomeTab('reports');
+    }
+
     performSearch();
 }
 
@@ -1237,8 +1630,12 @@ async function submitReport() {
   const description = descInput.value.trim();
   
   // Prepend Country Code if visible
+  let countryIso = null;
   const select = document.getElementById('scam-country-select');
   if (select && !select.classList.contains('hidden')) {
+      const code = select.value;
+      const cObj = countryCodes.find(c => c.code === code);
+      if (cObj) countryIso = cObj.iso;
       link = select.value + link;
   }
   
@@ -1299,6 +1696,7 @@ async function submitReport() {
       url: link,
       displayName: name,
       description: description,
+      country: countryIso,
       scamType: scamType,
       imageExpected: null,
       imageGot: null,
@@ -1445,7 +1843,7 @@ let currentReportLimit = 12;
 const REPORTS_PER_PAGE = 12;
 
 // Render Reports
-async function renderReports(searchQuery = "", sortType = "trending") {
+async function renderReports(searchQuery = "", sortType = "trending", countryFilter = "GLOBAL", verifiedOnly = false) {
   const container = document.getElementById('local-reports-grid');
   const loadMoreBtn = document.getElementById('reports-load-more-container');
   if (!container) return;
@@ -1468,6 +1866,20 @@ async function renderReports(searchQuery = "", sortType = "trending") {
   querySnapshot.forEach((doc) => {
     const data = doc.data();
     if (data.displayName) {
+      // Country Filter Logic
+      if (countryFilter !== 'GLOBAL') {
+          const filterIso = countryFilter.toLowerCase();
+          const itemIso = (data.country || '').toLowerCase();
+          let match = itemIso === filterIso;
+          
+          // Fallback: Check phone number prefix if no explicit country
+          if (!match && !data.country && data.url) {
+               const cObj = countryCodes.find(c => c.iso === filterIso);
+               if (cObj && data.url.startsWith(cObj.code)) match = true;
+          }
+          if (!match) return;
+      }
+
       if (searchQuery) {
         const tokens = searchQuery.toLowerCase().split(/\s+/);
         const score = SearchSystem.score({
@@ -1534,6 +1946,16 @@ async function renderReports(searchQuery = "", sortType = "trending") {
       if (sortType === 'recent') return b.latestTimestamp - a.latestTimestamp; // Newest first
       return b.recentCount !== a.recentCount ? b.recentCount - a.recentCount : b.names.length - a.names.length; // Trending
   });
+
+  // Filter Verified (Trusted Business)
+  if (verifiedOnly) {
+      groups = groups.filter(g => g.score >= 80);
+  }
+
+  if (groups.length === 0) {
+      container.innerHTML = `<p style="opacity:0.6; text-align:center; padding: 40px;">No verified reports found.</p>`;
+      return;
+  }
 
   // Store processed groups and render first batch
   allReportGroups = groups;
@@ -1646,7 +2068,7 @@ function renderReportBatch(reset = false) {
             <div style="display:flex; align-items:flex-start;">
                 <div style="width:40px; height:40px; margin-right:10px; flex-shrink:0;">${platform.icon}</div>
                 <div>
-                      <div class="phone-number">${escapeHTML(username)}</div>
+                      <div class="phone-number" style="word-break: break-word;">${escapeHTML(username)}</div>
                     <div class="location-badge">${flagDisplay}${platform.name}</div>
                 </div>
             </div>
@@ -1666,7 +2088,7 @@ function renderReportBatch(reset = false) {
         card.innerHTML = `
           <div class="card-header">
             <div class="platform-icon" style="background:${platform.color}">${platform.icon}</div>
-            <div class="card-user">${finalDisplayName}</div>
+            <div class="card-user" style="word-break: break-word;">${finalDisplayName}</div>
           </div>
           <div class="known-as">Profile: <strong>${escapeHTML(username)}</strong> (${group.names.length} reports)</div>
           ${displayImage ? `<img src="${displayImage}">` : ''}
@@ -1743,7 +2165,7 @@ async function loadMoreReports() {
 }
 window.loadMoreReports = loadMoreReports;
 
-async function renderRatings(searchQuery = "", sortType = "trending") {
+async function renderRatings(searchQuery = "", sortType = "trending", countryFilter = "GLOBAL", verifiedOnly = false) {
   const container = document.getElementById('local-ratings-grid');
   if (!container) return;
 
@@ -1764,6 +2186,20 @@ async function renderRatings(searchQuery = "", sortType = "trending") {
   querySnapshot.forEach((doc) => {
     const data = doc.data();
     if (data.rating) {
+      // Country Filter Logic
+      if (countryFilter !== 'GLOBAL') {
+          const filterIso = countryFilter.toLowerCase();
+          const itemIso = (data.country || '').toLowerCase();
+          let match = itemIso === filterIso;
+          
+          // Fallback: Check phone number prefix
+          if (!match && !data.country && data.url) {
+               const cObj = countryCodes.find(c => c.iso === filterIso);
+               if (cObj && data.url.startsWith(cObj.code)) match = true;
+          }
+          if (!match) return;
+      }
+
       if (searchQuery) {
         const tokens = searchQuery.toLowerCase().split(/\s+/);
         const score = SearchSystem.score({
@@ -1822,6 +2258,16 @@ async function renderRatings(searchQuery = "", sortType = "trending") {
       if (sortType === 'recent') return b.latestTimestamp - a.latestTimestamp;
       return b.recentCount !== a.recentCount ? b.recentCount - a.recentCount : b.ratings.length - a.ratings.length;
   });
+
+  // Filter Verified (Trusted Business)
+  if (verifiedOnly) {
+      groups = groups.filter(g => g.score >= 80);
+  }
+
+  if (groups.length === 0) {
+      container.innerHTML = `<p style="opacity:0.6; text-align:center; padding: 40px;">No verified ratings found.</p>`;
+      return;
+  }
 
   groups.forEach(group => {
       const avgRating = group.ratings.reduce((a, b) => a + b, 0) / group.ratings.length;
@@ -1902,7 +2348,7 @@ async function renderRatings(searchQuery = "", sortType = "trending") {
               <div class="card-header" style="align-items:flex-start;">
                   <div style="width:40px; height:40px; margin-right:10px; flex-shrink:0;">${platform.icon}</div>
                   <div>
-                      <div class="phone-number">${escapeHTML(username)}</div>
+                      <div class="phone-number" style="word-break: break-word;">${escapeHTML(username)}</div>
                       <div class="location-badge">${flagDisplay}${platform.name}</div>
                   </div>
               </div>
@@ -1917,7 +2363,7 @@ async function renderRatings(searchQuery = "", sortType = "trending") {
           card.innerHTML = `
               <div class="card-header">
                   <div class="platform-icon" style="background:${platform.color}">${platform.icon}</div>
-                  <div class="card-user">${displayTitle}</div>
+                  <div class="card-user" style="word-break: break-word;">${displayTitle}</div>
               </div>
               <div class="known-as" style="font-size: 1.2em; color: #ffaa00;">${stars} <span style="font-size: 0.7em; color: #8b949e;">(${avgRating.toFixed(1)} avg. from ${group.ratings.length} ratings)</span></div>
               <div class="warning-label" style="color:${status.color}; margin-top:8px;">
@@ -2336,9 +2782,9 @@ async function populateDetailsView(url, type, highlightId = null) {
 
     container.innerHTML += `
       <div style="text-align:center; margin-bottom:24px;">
-        <a href="${displayUrl}" ${isPhone ? '' : `onclick="interceptLink(event, this.href, '${statusText}')"`} style="display:inline-flex; align-items:center; gap:12px; text-decoration:none; color:${isVerified ? '#ffd700' : '#eaeaea'}; font-size:1.6rem; font-weight:bold; transition: opacity 0.2s;">
+        <a href="${displayUrl}" ${isPhone ? '' : `onclick="interceptLink(event, this.href, '${statusText}')"`} style="display:inline-flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:12px; text-decoration:none; color:${isVerified ? '#ffd700' : '#eaeaea'}; font-size:1.6rem; font-weight:bold; transition: opacity 0.2s; max-width: 100%;">
           <div class="platform-icon" style="background:${platform.color}; width:48px; height:48px; font-size:24px; display:flex; align-items:center; justify-content:center;">${platform.icon}</div>
-          <span>${displayTitle}</span>
+          <span style="word-break: break-word; text-align: center;">${displayTitle}</span>
           ${verifiedBadge}
           <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:#38bdf8; opacity:0.8;"><path d="M18 13v6c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V8c0-1.1.9-2 2-2h6v2H5v11h11v-6h2zm-1.5-9H11v2h3.59l-4.83 4.83 1.41 1.41L16 7.41V11h2V4z"/></svg>
         </a>
@@ -2351,6 +2797,10 @@ async function populateDetailsView(url, type, highlightId = null) {
              <button onclick="reportLinkFromModal(decodeURIComponent(&quot;${encodeURIComponent(url)}&quot;))" style="background:rgba(255, 77, 77, 0.1); border:1px solid rgba(255, 77, 77, 0.3); color:#ff4d4d; padding:8px 20px; border-radius:50px; font-size:0.9rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:8px; transition:all 0.2s;">
                 <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M15.73 3H8.27L3 8.27v7.46L8.27 21h7.46L21 15.73V8.27L15.73 3zM12 17.3c-.72 0-1.3-.58-1.3-1.3 0-.72.58-1.3 1.3-1.3.72 0 1.3.58 1.3 1.3 0 .72-.58 1.3-1.3 1.3zm1-4.3h-2V7h2v6z"/></svg>
                 Report User
+            </button>
+             <button onclick="shareItem(decodeURIComponent(&quot;${encodeURIComponent(url)}&quot;), decodeURIComponent(&quot;${encodeURIComponent(enrichedName || username)}&quot;), '${statusText}')" style="background:rgba(139, 92, 246, 0.1); border:1px solid rgba(139, 92, 246, 0.3); color:#8b5cf6; padding:8px 20px; border-radius:50px; font-size:0.9rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:8px; transition:all 0.2s;">
+                <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+                Share
             </button>
         </div>
       </div>
@@ -2435,7 +2885,7 @@ async function populateDetailsView(url, type, highlightId = null) {
       const safeName = escapeHTML(rName).replace(/'/g, "\\'");
       
       const userHtml = `
-        <div style="display:flex; align-items:center; gap:10px;">
+        <div style="display:flex; align-items:center; gap:10px; cursor:pointer;" onclick="showUserProfile('${item.uid}', '${safeName}', '${rPhoto}')" title="View Profile">
           <img src="${rPhoto}" alt="${escapeHTML(rName)}" style="width:32px; height:32px; border-radius:50%; object-fit:cover;">
           <span style="color:${isVerifiedUser ? '#ffd700' : '#eaeaea'}; font-weight:bold;">${escapeHTML(rName)}</span>
           ${isBanned ? '<span style="color:#ff4d4d; font-size:0.8em; font-weight:bold; border:1px solid #ff4d4d; padding:0 4px; border-radius:4px;">BANNED</span>' : ''}
@@ -2490,6 +2940,16 @@ async function populateDetailsView(url, type, highlightId = null) {
                 Delete
              </button>
           ` : ''}
+          ${(auth.currentUser && auth.currentUser.uid === item.uid && item.type === 'report' && (Date.now() - item.timestamp < 86400000)) ? `
+             <button onclick="editReport('${item.id}')" style="background:none; border:1px solid #38bdf8; border-radius:4px; cursor:pointer; color:#38bdf8; padding:2px 6px; font-size:0.7em; margin-left:5px;" title="Edit Report">
+                Edit
+             </button>
+          ` : ''}
+          ${(auth.currentUser && auth.currentUser.uid !== item.uid) ? `
+             <button onclick="reportAbuse('${item.id}', '${item.type}', '${item.uid}')" style="background:none; border:none; cursor:pointer; color:#8b949e; padding:2px 6px; margin-left:5px; opacity:0.6;" title="Report Abuse">
+                <svg viewBox="0 0 24 24" style="width:14px; height:14px; fill:currentColor;"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg>
+             </button>
+          ` : ''}
         </div>
       `;
 
@@ -2533,7 +2993,10 @@ async function populateDetailsView(url, type, highlightId = null) {
         content = `
           <div class="review-header" style="align-items:center;">
             ${userHtml}
-            <span>${date}</span>
+            <div style="text-align:right;">
+                <div>${date}</div>
+                ${item.lastEdited ? `<div style="font-size:0.75em; color:#8b949e; font-style:italic;">Edited: ${new Date(item.lastEdited).toLocaleDateString()}</div>` : ''}
+            </div>
           </div>
           <div style="margin-bottom:10px; font-size:0.9em;">
             <span class="scam-type-tag">${typeLabel}</span><br>
@@ -2586,6 +3049,259 @@ async function populateDetailsView(url, type, highlightId = null) {
   }
 }
 
+/* SHOW USER PROFILE MODAL */
+async function showUserProfile(uid, name, photo) {
+    const existing = document.getElementById('user-profile-modal');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'user-profile-modal';
+    overlay.className = 'custom-modal-overlay active';
+    
+    // Initial Skeleton with Cleaner Layout
+    overlay.innerHTML = `
+        <div class="custom-modal" style="max-width:500px; width:95%; max-height:90vh; display:flex; flex-direction:column; padding:0; overflow:hidden; background:#0d1117; border:1px solid #30363d; border-radius:12px;">
+            <!-- Header -->
+            <div style="padding:24px; background:linear-gradient(180deg, #161b22 0%, #0d1117 100%); border-bottom:1px solid #30363d; text-align:center; position:relative;">
+                <button onclick="document.getElementById('user-profile-modal').remove()" style="position:absolute; top:15px; right:15px; background:none; border:none; color:#8b949e; cursor:pointer; padding:5px;">
+                    <svg viewBox="0 0 24 24" style="width:24px; height:24px; fill:currentColor;"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                </button>
+                
+                <div style="position:relative; display:inline-block; margin-bottom:12px;">
+                    <img src="${photo}" style="width:80px; height:80px; border-radius:50%; object-fit:cover; border:3px solid #30363d; background:#0d1117;">
+                    <div id="profile-status-indicator" style="position:absolute; bottom:2px; right:2px; width:16px; height:16px; border-radius:50%; border:2px solid #0d1117; display:none;"></div>
+                </div>
+                
+                <h2 style="margin:0 0 4px 0; font-size:1.5rem; color:#f0f6fc; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    ${escapeHTML(name)}
+                    <span id="profile-badges-inline"></span>
+                </h2>
+                
+                <div id="profile-meta" style="color:#8b949e; font-size:0.9em; margin-bottom:15px;">Loading profile...</div>
+                
+                <div id="profile-stats" style="display:flex; justify-content:center; gap:20px; opacity:0.5;">
+                    <div style="text-align:center;">
+                        <div style="font-size:1.2em; font-weight:bold; color:#f0f6fc;">-</div>
+                        <div style="font-size:0.75em; color:#8b949e; text-transform:uppercase; letter-spacing:0.5px;">Reports</div>
+                    </div>
+                    <div style="text-align:center; padding:0 15px; border-left:1px solid #30363d; border-right:1px solid #30363d;">
+                        <div style="font-size:1.2em; font-weight:bold; color:#f0f6fc;">-</div>
+                        <div style="font-size:0.75em; color:#8b949e; text-transform:uppercase; letter-spacing:0.5px;">Ratings</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <div style="font-size:1.2em; font-weight:bold; color:#8b949e;">-</div>
+                        <div style="font-size:0.75em; color:#8b949e; text-transform:uppercase; letter-spacing:0.5px;">Trust</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div id="user-profile-content" style="padding:0; overflow-y:auto; flex:1; background:#0d1117;">
+                <div style="padding:20px;">
+                    <div class="skeleton" style="width:100%; height:80px; margin-bottom:10px;"></div>
+                    <div class="skeleton" style="width:100%; height:80px;"></div>
+                </div>
+            </div>
+            
+            <!-- Footer Actions -->
+            <div id="profile-footer" style="padding:15px 20px; border-top:1px solid #30363d; background:#161b22; display:flex; justify-content:flex-end; display:none;">
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    try {
+        // Fetch Data
+        const [reportsSnap, ratingsSnap, verifySnap, banSnap] = await Promise.all([
+            getDocs(query(collection(db, "reports"), where("uid", "==", uid))),
+            getDocs(query(collection(db, "ratings"), where("uid", "==", uid))),
+            getDoc(doc(db, "verified_users", uid)),
+            getDoc(doc(db, "banned_users", uid))
+        ]);
+
+        const activities = [];
+        reportsSnap.forEach(doc => activities.push({ ...doc.data(), type: 'report', id: doc.id }));
+        ratingsSnap.forEach(doc => activities.push({ ...doc.data(), type: 'rating', id: doc.id }));
+        
+        // Sort combined
+        activities.sort((a, b) => b.timestamp - a.timestamp);
+
+        // Stats
+        const reportCount = reportsSnap.size;
+        const ratingCount = ratingsSnap.size;
+        
+        // Determine Joined Date (Oldest activity)
+        let joinedDate = "Unknown";
+        if (activities.length > 0) {
+            const oldest = activities[activities.length - 1].timestamp;
+            joinedDate = new Date(oldest).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+        }
+
+        // Badges Logic
+        const isAdmin = (uid === ADMIN_UID);
+        const isVerified = verifySnap.exists();
+        const isBanned = banSnap.exists();
+        
+        const badgesInline = document.getElementById('profile-badges-inline');
+        
+        if (isAdmin) {
+            badgesInline.innerHTML = `
+            <div class="admin-badge-container" title="Administrator" style="transform:scale(0.8); margin:0;">
+                <div class="admin-dust" style="left: 20%; animation-delay: 0s;"></div>
+                <div class="admin-dust" style="left: 50%; animation-delay: 0.8s;"></div>
+                <div class="admin-dust" style="left: 80%; animation-delay: 1.6s;"></div>
+                <svg class="admin-shield-icon" viewBox="0 0 24 24">
+                    <defs>
+                        <linearGradient id="silverMetal_profile" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#e6e6e6" />
+                            <stop offset="25%" stop-color="#b0b0b0" />
+                            <stop offset="50%" stop-color="#ffffff" />
+                            <stop offset="75%" stop-color="#808080" />
+                            <stop offset="100%" stop-color="#505050" />
+                        </linearGradient>
+                        <linearGradient id="shieldReflect_profile" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="rgba(255,255,255,0)" />
+                            <stop offset="50%" stop-color="rgba(255,255,255,0.9)" />
+                            <stop offset="100%" stop-color="rgba(255,255,255,0)" />
+                            <animate attributeName="x1" from="-150%" to="150%" dur="2s" repeatCount="indefinite" />
+                            <animate attributeName="x2" from="-50%" to="250%" dur="2s" repeatCount="indefinite" />
+                        </linearGradient>
+                    </defs>
+                    <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" fill="url(#silverMetal_profile)" stroke="#666" stroke-width="0.5"/>
+                    <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" fill="url(#shieldReflect_profile)" style="mix-blend-mode: overlay;" />
+                </svg>
+            </div>`;
+        }
+        
+        if (isVerified) {
+            badgesInline.innerHTML += `
+            <div class="verified-badge-container small" title="Verified Community Member" style="transform:scale(1.2);">
+                <div class="verified-badge-icon">
+                    <svg viewBox="0 0 24 24" style="width:14px; height:14px; fill:#0d1117;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                </div>
+                <div class="verified-dust" style="--dx: 8px; --dy: -8px; animation-delay: 0s;"></div>
+                <div class="verified-dust" style="--dx: -6px; --dy: -10px; animation-delay: 0.4s;"></div>
+                <div class="verified-dust" style="--dx: 10px; --dy: 6px; animation-delay: 0.8s;"></div>
+            </div>`;
+        }
+
+        // Status Indicator (Online/Banned/Verified color ring)
+        const statusInd = document.getElementById('profile-status-indicator');
+        if (isBanned) {
+            statusInd.style.display = 'block';
+            statusInd.style.background = '#ff4d4d';
+            badgesInline.innerHTML += `<span style="background:rgba(255, 77, 77, 0.15); color:#ff4d4d; border:1px solid rgba(255, 77, 77, 0.3); padding:2px 6px; border-radius:4px; font-size:0.6em; font-weight:bold; vertical-align:middle; margin-left:5px;">BANNED</span>`;
+        } else if (isVerified || isAdmin) {
+            statusInd.style.display = 'block';
+            statusInd.style.background = isAdmin ? '#e6e6e6' : '#ffd700';
+        }
+
+        // Update Meta
+        document.getElementById('profile-meta').innerText = `Joined ${joinedDate}`;
+
+        // Update Stats
+        const statsEl = document.getElementById('profile-stats');
+        statsEl.style.opacity = '1';
+        statsEl.innerHTML = `
+            <div style="text-align:center;">
+                <div style="font-size:1.2em; font-weight:bold; color:#f0f6fc;">${reportCount}</div>
+                <div style="font-size:0.75em; color:#8b949e; text-transform:uppercase; letter-spacing:0.5px;">Reports</div>
+            </div>
+            <div style="text-align:center; padding:0 15px; border-left:1px solid #30363d; border-right:1px solid #30363d;">
+                <div style="font-size:1.2em; font-weight:bold; color:#f0f6fc;">${ratingCount}</div>
+                <div style="font-size:0.75em; color:#8b949e; text-transform:uppercase; letter-spacing:0.5px;">Ratings</div>
+            </div>
+            <div style="text-align:center;">
+                <div style="font-size:1.2em; font-weight:bold; color:${isAdmin ? '#e6e6e6' : (isVerified ? '#ffd700' : '#8b949e')}">${isAdmin ? '∞' : (isVerified ? 'High' : 'N/A')}</div>
+                <div style="font-size:0.75em; color:#8b949e; text-transform:uppercase; letter-spacing:0.5px;">Trust</div>
+            </div>
+        `;
+
+        // Footer Actions
+        const footer = document.getElementById('profile-footer');
+        if (auth.currentUser && auth.currentUser.uid !== uid) {
+            footer.style.display = 'flex';
+            footer.innerHTML = `
+                 <button onclick="reportAbuse('${uid}', 'user', '${uid}')" style="background:none; border:none; color:#ff4d4d; cursor:pointer; font-size:0.9em; display:flex; align-items:center; gap:6px; opacity:0.8; transition:opacity 0.2s;">
+                    <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg>
+                    Report User
+                 </button>
+            `;
+        }
+
+        // Render Content
+        const contentContainer = document.getElementById('user-profile-content');
+        if (activities.length === 0) {
+            contentContainer.innerHTML = `
+                <div style="padding:40px 20px; text-align:center; color:#8b949e;">
+                    <svg viewBox="0 0 24 24" style="width:40px; height:40px; fill:currentColor; opacity:0.3; margin-bottom:10px;"><path d="M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-4.86 8.86l-3 3.87L9 13.14 6 17h12l-3.86-5.14z"/></svg>
+                    <p style="margin:0;">No public activity yet.</p>
+                </div>`;
+        } else {
+            contentContainer.innerHTML = `<div style="padding:0;">`;
+            
+            activities.forEach((item, index) => {
+                const date = new Date(item.timestamp).toLocaleDateString();
+                const platform = getPlatformInfo(item.url);
+                const targetName = extractUsername(item.url);
+                const isLast = index === activities.length - 1;
+                
+                let itemHtml = '';
+                if (item.type === 'report') {
+                    itemHtml = `
+                        <div style="padding:15px 20px; border-bottom:${isLast ? 'none' : '1px solid #21262d'}; display:flex; gap:12px; align-items:flex-start;">
+                            <div style="width:32px; height:32px; background:rgba(255, 77, 77, 0.1); border-radius:8px; display:flex; align-items:center; justify-content:center; color:#ff4d4d; flex-shrink:0;">
+                                <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                            </div>
+                            <div style="flex:1; min-width:0;">
+                                <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px;">
+                                    <span style="color:#f0f6fc; font-weight:600; font-size:0.95em;">Reported Scam</span>
+                                    <span style="color:#8b949e; font-size:0.75em;">${date}</span>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                                    <div style="width:14px; height:14px;">${platform.icon}</div>
+                                    <span style="color:#8b949e; font-size:0.85em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHTML(targetName)}</span>
+                                </div>
+                                <p style="font-size:0.9em; color:#b0b8c3; margin:0; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${escapeHTML(item.description)}</p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    const stars = '★'.repeat(item.rating);
+                    const isPositive = item.rating >= 4;
+                    const color = isPositive ? '#4dff88' : (item.rating <= 2 ? '#ff4d4d' : '#ffaa00');
+                    
+                    itemHtml = `
+                        <div style="padding:15px 20px; border-bottom:${isLast ? 'none' : '1px solid #21262d'}; display:flex; gap:12px; align-items:flex-start;">
+                            <div style="width:32px; height:32px; background:${color}1a; border-radius:8px; display:flex; align-items:center; justify-content:center; color:${color}; flex-shrink:0;">
+                                <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                            </div>
+                            <div style="flex:1; min-width:0;">
+                                <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px;">
+                                    <span style="color:${color}; font-size:0.9em;">${stars}</span>
+                                    <span style="color:#8b949e; font-size:0.75em;">${date}</span>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                                    <div style="width:14px; height:14px;">${platform.icon}</div>
+                                    <span style="color:#8b949e; font-size:0.85em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHTML(targetName)}</span>
+                                </div>
+                                ${item.good ? `<p style="font-size:0.85em; color:#b0b8c3; margin:0;">"${escapeHTML(item.good)}"</p>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+                contentContainer.innerHTML += itemHtml;
+            });
+            contentContainer.innerHTML += `</div>`;
+        }
+
+    } catch (e) {
+        console.error("Profile load error:", e);
+        showToast("Failed to load user profile.", "error");
+        document.getElementById('user-profile-modal').remove();
+    }
+}
+
 /* CHART GENERATOR */
 function generateTrustChart(data, color) {
   if (data.length < 2) return '<p style="text-align:center; padding-top:60px; opacity:0.5;">Not enough data for chart</p>';
@@ -2624,7 +3340,7 @@ function generateTrustChart(data, color) {
   `).join('');
 
   return `
-    <svg viewBox="0 -10 ${width} ${height + 30}" preserveAspectRatio="none" style="overflow: visible;">
+    <svg viewBox="0 -10 ${width} ${height + 30}" preserveAspectRatio="none" style="width:100%; overflow: hidden;">
       <style>
         .chart-line {
           fill: none;
@@ -3004,6 +3720,133 @@ function initAdminBlacklistUI() {
     }
 }
 
+/* ADMIN: ABUSE REPORTS LOGIC */
+async function resolveAbuseReport(reportId, action, targetCollection, targetId, reportedUid) {
+    if (!auth.currentUser) return;
+
+    try {
+        if (action === 'dismiss') {
+            if (!await showConfirm("Dismiss this report? It will be removed.", "Dismiss Report")) return;
+            await deleteDoc(doc(db, "abuse_reports", reportId));
+            showToast("Report dismissed.", "success");
+        } 
+        else if (action === 'delete_content') {
+            if (!await showConfirm("Delete the reported content? This cannot be undone.", "Delete Content", true)) return;
+            // Delete target content
+            await deleteDoc(doc(db, targetCollection, targetId));
+            // Update abuse report status or delete it
+            await updateDoc(doc(db, "abuse_reports", reportId), { status: 'resolved', resolution: 'Content Deleted' });
+            showToast("Content deleted.", "success");
+        }
+        else if (action === 'ban_user') {
+            // Ban logic
+             if (!await showConfirm("Ban the reported user?", "Ban User", true)) return;
+             await toggleUserBan(reportedUid, false, 'Reported User', '', 'Abuse Report Resolution', true);
+             await updateDoc(doc(db, "abuse_reports", reportId), { status: 'resolved', resolution: 'User Banned' });
+             showToast("User banned.", "success");
+        }
+        renderAbuseReports();
+    } catch (e) {
+        console.error("Error resolving abuse report:", e);
+        showToast("Action failed: " + e.message, "error");
+    }
+}
+
+async function renderAbuseReports() {
+    const container = document.getElementById('admin-abuse-list');
+    if (!container) return;
+
+    container.innerHTML = getSkeletonHTML(2);
+
+    try {
+        const q = query(collection(db, "abuse_reports"), orderBy("timestamp", "desc"));
+        const snapshot = await getDocs(q);
+
+        if (snapshot.empty) {
+            container.innerHTML = '<p style="text-align:center; opacity:0.7;">No abuse reports found.</p>';
+            return;
+        }
+
+        container.innerHTML = '';
+        
+        for (const docSnap of snapshot.docs) {
+            const data = docSnap.data();
+            if (data.status === 'resolved') continue;
+
+            // Fetch target content for context
+            let contentPreview = "Loading content...";
+            try {
+                const targetSnap = await getDoc(doc(db, data.targetCollection, data.targetId));
+                if (targetSnap.exists()) {
+                    const tData = targetSnap.data();
+                    contentPreview = escapeHTML(tData.description || tData.good || tData.bad || tData.url || "No text content");
+                } else {
+                    contentPreview = "<em style='color:#ff4d4d'>Content already deleted</em>";
+                }
+            } catch (e) {
+                contentPreview = "Error loading content";
+            }
+
+            const card = document.createElement('div');
+            card.className = 'mini-card';
+            card.style.borderColor = '#ffaa00';
+            card.innerHTML = `
+                <div class="card-header" style="flex-direction:column; align-items:flex-start; gap:5px;">
+                    <div style="font-weight:bold; color:#ffaa00;">Reason: ${escapeHTML(data.reason)}</div>
+                    <div style="font-size:0.8em; color:#8b949e;">Reported by UID: ${data.reporterUid}</div>
+                    <div style="font-size:0.8em; color:#8b949e;">Target UID: ${data.reportedUid}</div>
+                </div>
+                <div style="background:#0d1117; padding:8px; border-radius:6px; margin:10px 0; font-size:0.9em; color:#eaeaea; border:1px solid #30363d;">
+                    <strong>Content Preview:</strong><br>
+                    ${contentPreview}
+                </div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button onclick="resolveAbuseReport('${docSnap.id}', 'dismiss')" style="flex:1; background:none; border:1px solid #8b949e; color:#8b949e; padding:6px; border-radius:4px; cursor:pointer;">Dismiss</button>
+                    <button onclick="resolveAbuseReport('${docSnap.id}', 'delete_content', '${data.targetCollection}', '${data.targetId}')" style="flex:1; background:none; border:1px solid #ff4d4d; color:#ff4d4d; padding:6px; border-radius:4px; cursor:pointer;">Delete Content</button>
+                    <button onclick="resolveAbuseReport('${docSnap.id}', 'ban_user', '${data.targetCollection}', '${data.targetId}', '${data.reportedUid}')" style="flex:1; background:#ff4d4d; border:none; color:white; padding:6px; border-radius:4px; cursor:pointer;">Ban User</button>
+                </div>
+                <div style="font-size:0.75em; color:#8b949e; margin-top:8px; text-align:right;">${new Date(data.timestamp).toLocaleString()}</div>
+            `;
+            container.appendChild(card);
+            resizeGridItem(card);
+        }
+        setTimeout(resizeAllGridItems, 100);
+
+    } catch (e) {
+        console.error("Error rendering abuse reports:", e);
+        container.innerHTML = '<p style="text-align:center; color:#ff4d4d;">Error loading reports.</p>';
+    }
+}
+
+function initAdminAbuseUI() {
+    const parent = document.getElementById('admin-verified-tab-btn')?.parentNode;
+    
+    if (parent && !document.getElementById('admin-abuse-tab-btn')) {
+        const btn = document.createElement('button');
+        btn.id = 'admin-abuse-tab-btn';
+        btn.className = 'home-tab-btn';
+        btn.onclick = () => switchAdminTab('abuse');
+        btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg> Abuse Reports`;
+        parent.appendChild(btn);
+    }
+
+    const sectionParent = document.getElementById('admin-verified-section')?.parentNode;
+
+    if (sectionParent && !document.getElementById('admin-abuse-section')) {
+        const section = document.createElement('div');
+        section.id = 'admin-abuse-section';
+        section.className = 'hidden';
+        section.innerHTML = `
+            <div class="card" style="margin-bottom:20px; border-color:#ffaa00;">
+                <h3 style="margin-top:0; color:#ffaa00;">Abuse Reports Queue</h3>
+                <p style="font-size:0.9em; color:#8b949e;">Review and resolve user reports regarding spam or harassment.</p>
+            </div>
+            <div id="admin-abuse-list" class="report-grid"></div>
+        `;
+        sectionParent.appendChild(section);
+    }
+}
+
 /* DELETION TIMER LOGIC */
 let pendingDeletion = null;
 
@@ -3076,6 +3919,7 @@ async function renderAdminDashboard() {
     
     initAdminBanControls();
     initAdminBlacklistUI();
+    initAdminAbuseUI();
     
     container.innerHTML = getSkeletonHTML(3);
     banContainer.innerHTML = getSkeletonHTML(3);
@@ -3096,10 +3940,10 @@ async function renderAdminDashboard() {
         card.innerHTML = `
             <div class="card-header">
                 <img src="${data.photoURL || 'https://via.placeholder.com/40'}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
-                <div class="card-user" style="color:#ffd700;">${escapeHTML(data.displayName || 'Unknown User')}</div>
+                <div class="card-user" style="color:#ffd700; word-break: break-word;">${escapeHTML(data.displayName || 'Unknown User')}</div>
             </div>
             <div style="font-size:0.9em; color:#8b949e; margin-top:5px;">
-                <div>UID: <span style="font-family:monospace;">${doc.id}</span>
+                <div style="word-break: break-all;">UID: <span style="font-family:monospace;">${doc.id}</span>
                     <button onclick="copyToClipboard('${doc.id}')" style="background:none; border:none; cursor:pointer; padding:0 4px; color:#8b5cf6; vertical-align:middle;" title="Copy UID">
                         <svg viewBox="0 0 24 24" style="width:14px; height:14px; fill:currentColor;"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
                     </button>
@@ -3134,7 +3978,7 @@ async function renderAdminDashboard() {
         card.innerHTML = `
             <div class="card-header">
                 <img src="${data.photoURL || 'https://via.placeholder.com/40'}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
-                <div class="card-user">${escapeHTML(data.displayName || 'Unknown User')}</div>
+                <div class="card-user" style="word-break: break-word;">${escapeHTML(data.displayName || 'Unknown User')}</div>
             </div>
             <div style="font-size:0.9em; color:#ff4d4d; margin-top:5px;">BANNED: ${new Date(data.timestamp).toLocaleDateString()}<br>Reason: ${escapeHTML(data.reason || 'N/A')}</div>
             <button class="visit-btn" onclick="toggleUserBan('${doc.id}', true)" style="margin-top:10px;">Unban User</button>
@@ -3150,6 +3994,7 @@ async function renderAdminDashboard() {
     
     filterAdminList(); // Re-apply filter if search text exists
     renderBlacklist();
+    renderAbuseReports();
     setTimeout(resizeAllGridItems, 100);
 }
 
@@ -3445,8 +4290,12 @@ async function submitRating() {
   const rating = document.getElementById('rating-input').value;
   
   // Prepend Country Code if visible
+  let countryIso = null;
   const select = document.getElementById('rate-country-select');
   if (select && !select.classList.contains('hidden')) {
+      const code = select.value;
+      const cObj = countryCodes.find(c => c.code === code);
+      if (cObj) countryIso = cObj.iso;
       link = select.value + link;
   }
 
@@ -3503,6 +4352,7 @@ async function submitRating() {
       rating: rating,
       good: good,
       bad: bad,
+      country: countryIso,
       timestamp: Date.now(),
       uid: user.uid,
       realName: enrichedData.realName || null,
@@ -3527,6 +4377,203 @@ async function submitRating() {
     btn.classList.remove('loading');
     btn.innerText = originalText;
   }
+}
+
+/* EDIT REPORT LOGIC */
+async function editReport(id) {
+    if (!auth.currentUser) return;
+    
+    // Fetch current data to ensure validity
+    try {
+        const docRef = doc(db, "reports", id);
+        const snap = await getDoc(docRef);
+        
+        if (!snap.exists()) {
+            showToast("Report not found.", "error");
+            return;
+        }
+        
+        const data = snap.data();
+        
+        // Authorization Check
+        if (data.uid !== auth.currentUser.uid) {
+            showToast("You can only edit your own reports.", "error");
+            return;
+        }
+        
+        // Time Limit Check (24 hours)
+        if (Date.now() - data.timestamp > 24 * 60 * 60 * 1000) {
+            showToast("Reports can only be edited within 24 hours.", "error");
+            return;
+        }
+        
+        showEditModal(id, data);
+        
+    } catch (e) {
+        console.error("Edit fetch error:", e);
+        showToast("Error loading report for editing.", "error");
+    }
+}
+
+function showEditModal(id, data) {
+    const existing = document.getElementById('edit-report-modal');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'edit-report-modal';
+    overlay.className = 'custom-modal-overlay active';
+    
+    const typeOptions = [
+        {v: 'not_delivered', l: 'Paid but item never arrived'},
+        {v: 'fake_item', l: 'Item received was fake / Low quality'},
+        {v: 'wrong_item', l: 'Received completely different item'},
+        {v: 'phishing', l: 'Phishing / Suspicious Link'},
+        {v: 'other', l: 'Other'}
+    ];
+    
+    const optionsHtml = typeOptions.map(o => 
+        `<option value="${o.v}" ${data.scamType === o.v ? 'selected' : ''}>${o.l}</option>`
+    ).join('');
+
+    overlay.innerHTML = `
+        <div class="custom-modal" style="max-width:500px; width:90%;">
+            <div class="modal-title">Edit Report</div>
+            <div class="modal-message" style="text-align:left;">
+                <label style="display:block; margin-bottom:5px; color:#8b949e; font-size:0.9em;">Display Name</label>
+                <input type="text" id="edit-name" value="${escapeHTML(data.displayName)}" style="width:100%; margin-bottom:15px; padding:10px; background:#0d1117; border:1px solid #30363d; color:#eaeaea; border-radius:6px;">
+                
+                <label style="display:block; margin-bottom:5px; color:#8b949e; font-size:0.9em;">Scam Type</label>
+                <select id="edit-type" style="width:100%; margin-bottom:15px; padding:10px; background:#0d1117; border:1px solid #30363d; color:#eaeaea; border-radius:6px;">
+                    ${optionsHtml}
+                </select>
+
+                <label style="display:block; margin-bottom:5px; color:#8b949e; font-size:0.9em;">Description</label>
+                <textarea id="edit-desc" style="width:100%; height:120px; padding:10px; background:#0d1117; border:1px solid #30363d; color:#eaeaea; border-radius:6px; resize:vertical;">${escapeHTML(data.description)}</textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn btn-cancel" onclick="document.getElementById('edit-report-modal').remove()">Cancel</button>
+                <button class="modal-btn btn-confirm" onclick="saveReportEdit('${id}')">Save Changes</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+}
+
+async function saveReportEdit(id) {
+    const name = document.getElementById('edit-name').value.trim();
+    const type = document.getElementById('edit-type').value;
+    const desc = document.getElementById('edit-desc').value.trim();
+    
+    if (!name || !desc) {
+        showToast("Fields cannot be empty.", "error");
+        return;
+    }
+    
+    // AI Content Guard
+    const safetyCheck = AI_ContentGuard.analyze(desc);
+    if (!safetyCheck.safe) {
+        showToast(safetyCheck.reason, "error");
+        return;
+    }
+
+    const btn = document.querySelector('#edit-report-modal .btn-confirm');
+    const originalText = btn.innerText;
+    btn.innerText = "Saving...";
+    btn.disabled = true;
+
+    try {
+        await updateDoc(doc(db, "reports", id), {
+            displayName: name,
+            scamType: type,
+            description: desc,
+            lastEdited: Date.now()
+        });
+        
+        showToast("Report updated successfully.", "success");
+        document.getElementById('edit-report-modal').remove();
+        
+        // Refresh Views
+        if (!document.getElementById('user-activity-section').classList.contains('hidden')) renderActivity();
+        if (!document.getElementById('details-view').classList.contains('hidden') && window.lastDetailsArgs) {
+             populateDetailsView(window.lastDetailsArgs.url, window.lastDetailsArgs.type);
+        }
+        if (!document.getElementById('home').classList.contains('hidden')) renderReports();
+
+    } catch(e) {
+        console.error("Update failed:", e);
+        showToast("Failed to update report.", "error");
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }
+}
+
+/* REPORT ABUSE LOGIC */
+function reportAbuse(docId, type, reportedUid) {
+    if (!auth.currentUser) {
+        showToast("Please login to report content.", "error");
+        return;
+    }
+    
+    const existing = document.getElementById('report-abuse-modal');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'report-abuse-modal';
+    overlay.className = 'custom-modal-overlay active';
+    
+    overlay.innerHTML = `
+        <div class="custom-modal" style="max-width:400px; width:90%;">
+            <div class="modal-title">Report Content</div>
+            <div class="modal-message" style="text-align:left;">
+                <p style="color:#8b949e; font-size:0.9em; margin-bottom:15px;">Why are you reporting this?</p>
+                <select id="report-reason" style="width:100%; padding:10px; background:#0d1117; border:1px solid #30363d; color:#eaeaea; border-radius:6px; margin-bottom:15px;">
+                    <option value="Spam">Spam</option>
+                    <option value="Harassment">Harassment / Hate Speech</option>
+                    <option value="False Information">False Information</option>
+                    <option value="Inappropriate Content">Inappropriate Content</option>
+                    <option value="Other">Other</option>
+                </select>
+                <textarea id="report-details" placeholder="Additional details (optional)..." style="width:100%; height:80px; padding:10px; background:#0d1117; border:1px solid #30363d; color:#eaeaea; border-radius:6px; resize:vertical;"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn btn-cancel" onclick="document.getElementById('report-abuse-modal').remove()">Cancel</button>
+                <button class="modal-btn btn-confirm danger" onclick="submitAbuseReport('${docId}', '${type}', '${reportedUid}')">Report</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+}
+
+async function submitAbuseReport(docId, type, reportedUid) {
+    const reasonSelect = document.getElementById('report-reason');
+    const detailsInput = document.getElementById('report-details');
+    
+    const reason = reasonSelect.value;
+    const details = detailsInput.value.trim();
+    const fullReason = details ? `${reason}: ${details}` : reason;
+
+    const btn = document.querySelector('#report-abuse-modal .btn-confirm');
+    btn.innerText = "Sending...";
+    btn.disabled = true;
+
+    try {
+        await addDoc(collection(db, "abuse_reports"), {
+            targetId: docId,
+            targetCollection: type + 's', // 'reports' or 'ratings'
+            reportedUid: reportedUid,
+            reporterUid: auth.currentUser.uid,
+            reason: fullReason,
+            timestamp: Date.now(),
+            status: 'pending'
+        });
+        showToast("Report submitted. Thank you.", "success");
+        document.getElementById('report-abuse-modal').remove();
+    } catch (e) {
+        console.error("Error reporting abuse:", e);
+        showToast("Failed to submit report.", "error");
+        btn.innerText = "Report";
+        btn.disabled = false;
+    }
 }
 
 async function renderActivity() {
@@ -3609,11 +4656,15 @@ async function renderActivity() {
           card.innerHTML = `
             <div class="card-header">
               <div class="platform-icon" style="background:${platform.color}">${platform.icon}</div>
-              <div class="card-user">${displayTitle}</div>
+              <div class="card-user" style="word-break: break-word;">${displayTitle}</div>
             </div>
             <small style="opacity:0.7; word-break:break-all;">${r.url}</small>
+            ${r.lastEdited ? `<div style="font-size:0.75em; color:#8b949e; margin-top:2px; font-style:italic;">Edited: ${new Date(r.lastEdited).toLocaleDateString()}</div>` : ''}
             ${r.image ? `<img src="${r.image}" style="width:100%; border-radius:6px; margin-top:10px; object-fit:cover;">` : ''}
-            <button class="delete-btn" onclick="event.stopPropagation(); deleteActivityItem('reports', '${r.id}')" style="margin-top:auto;">Delete Report</button>
+            <div style="display:flex; gap:10px; margin-top:auto;">
+                ${(Date.now() - r.timestamp) < 86400000 ? `<button class="visit-btn" onclick="event.stopPropagation(); editReport('${r.id}')" style="margin:0; padding:6px 12px; font-size:0.8em; width:auto; background:none; border:1px solid #38bdf8; color:#38bdf8;">Edit</button>` : ''}
+                <button class="delete-btn" onclick="event.stopPropagation(); deleteActivityItem('reports', '${r.id}')" style="margin:0; padding:6px 12px; font-size:0.8em; width:auto;">Delete</button>
+            </div>
           `;
       }
       
@@ -3696,7 +4747,7 @@ async function renderActivity() {
           card.innerHTML = `
             <div class="card-header">
               <div class="platform-icon" style="background:${platform.color}">${platform.icon}</div>
-              <div class="card-user">${displayTitle}</div>
+              <div class="card-user" style="word-break: break-word;">${displayTitle}</div>
             </div>
             <div style="color:#ffaa00; font-size:1.2em; margin-bottom:5px;">${stars}</div>
             <small style="opacity:0.7; word-break:break-all;">${r.url}</small>
@@ -3964,10 +5015,16 @@ function loadNotifications() {
 
     notifications.forEach(n => {
       const color = n.type === 'ban' ? '#ff4d4d' : (n.type === 'urgent' ? '#ff4d4d' : (n.type === 'verified' ? '#38bdf8' : '#ffaa00'));
-      const icon = n.type === 'ban' ? '🚫' : (n.type === 'urgent' ? '⚠' : (n.type === 'verified' ? '✓' : '🏆'));
+      
+      let icon = '';
+      if (n.type === 'ban') icon = `<svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8 0-1.85.63-3.55 1.69-4.9L16.9 18.31C15.55 19.37 13.85 20 12 20zm6.31-3.1L7.1 5.69C8.45 4.63 10.15 4 12 4c4.42 0 8 3.58 8 8 0 1.85-.63 3.55-1.69 4.9z"/></svg>`;
+      else if (n.type === 'urgent') icon = `<svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor;"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>`;
+      else if (n.type === 'verified') icon = `<svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`;
+      else icon = `<svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor;"><path d="M20.2 2H3.8c-1.1 0-2 .9-2 2v5.5c0 1.3.5 2.5 1.4 3.4 1.3 1.3 3.2 1.8 5 1.1.6 2.7 2.6 4.8 5.3 5.4V21H9v2h6v-2h-4.5v-1.6c2.7-.6 4.7-2.7 5.3-5.4 1.8.7 3.7.2 5-1.1.9-.9 1.4-2.1 1.4-3.4V4c0-1.1-.9-2-2-2zm-1.7 5.5c0 .6-.2 1.1-.6 1.5-.9.9-2.3.9-3.2 0-.2-.2-.3-.4-.4-.6v-4h4.2v3.1zM5.5 9c-.4-.4-.6-.9-.6-1.5V4.4h4.2v4c-.1.2-.2.4-.4.6-.9.9-2.3.9-3.2 0z"/></svg>`;
+
       list.innerHTML += `
         <div class="notification-item" style="${n.type === 'ban' ? 'background:rgba(255, 77, 77, 0.1); border:1px solid rgba(255, 77, 77, 0.3);' : ''}">
-          <div class="notif-icon" style="color:${color}">${icon}</div>
+          <div class="notif-icon" style="color:${color}; display:flex; align-items:center; justify-content:center;">${icon}</div>
           <div class="notif-content" style="font-size:0.9em;">
             <strong style="color:${color}; display:block; margin-bottom:2px;">${n.title}</strong>
             ${n.message}
@@ -4022,6 +5079,9 @@ function loadNotifications() {
 function performSearch() {
   const query = document.getElementById('search-input').value.trim();
   const sort = document.getElementById('sort-filter') ? document.getElementById('sort-filter').value : 'trending';
+  const country = document.getElementById('country-filter') ? document.getElementById('country-filter').value : 'GLOBAL';
+  const verifiedBtn = document.getElementById('verified-filter-btn');
+  const verifiedOnly = verifiedBtn ? verifiedBtn.classList.contains('active') : false;
   const clearBtn = document.getElementById('clear-search-btn');
   const searchLabel = document.getElementById('search-results-label');
 
@@ -4030,6 +5090,13 @@ function performSearch() {
     if (searchLabel) {
       searchLabel.innerText = `Search Results for "${query}"`;
       searchLabel.classList.remove('hidden');
+      
+      // Save Recent Search
+      let searches = JSON.parse(localStorage.getItem('recent_searches') || '[]');
+      searches = searches.filter(s => s.toLowerCase() !== query.toLowerCase());
+      searches.unshift(query);
+      if (searches.length > 5) searches = searches.slice(0, 5);
+      localStorage.setItem('recent_searches', JSON.stringify(searches));
     }
   } else {
     if (clearBtn) clearBtn.classList.add('hidden');
@@ -4038,8 +5105,8 @@ function performSearch() {
     }
   }
 
-  renderReports(query, sort);
-  renderRatings(query, sort);
+  renderReports(query, sort, country, verifiedOnly);
+  renderRatings(query, sort, country, verifiedOnly);
 }
 
 function clearSearch() {
@@ -4404,6 +5471,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadNotifications();
     injectDynamicFormFields();
     initCountrySelects();
+    initCountryFilter();
     injectGlobalStyles();
     initSearchUI();
     window.addEventListener('resize', updateTabIndicator);
@@ -4445,6 +5513,12 @@ window.rateLinkFromModal = rateLinkFromModal;
 window.addBlacklistDomain = addBlacklistDomain;
 window.removeBlacklistDomain = removeBlacklistDomain;
 window.applySuggestion = applySuggestion;
+window.editReport = editReport;
+window.saveReportEdit = saveReportEdit;
+window.reportAbuse = reportAbuse;
+window.submitAbuseReport = submitAbuseReport;
+window.resolveAbuseReport = resolveAbuseReport;
+window.showUserProfile = showUserProfile;
 
 /* MENU TOGGLE */
 function toggleMenu() {
