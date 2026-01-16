@@ -27,8 +27,108 @@ const analytics = getAnalytics(app);
 // ADMIN CONFIGURATION
 const ADMIN_UID = "RDfLIxyEC1SZxNA7GphhTNGWi7A2";
 
+/* BACKGROUND ANIMATION HELPERS */
+let vantaAnimationId = null;
+
+// Helper to interpolate between two hex colors
+function interpolateColor(color1, color2, factor) {
+    const r1 = (color1 >> 16) & 255;
+    const g1 = (color1 >> 8) & 255;
+    const b1 = color1 & 255;
+
+    const r2 = (color2 >> 16) & 255;
+    const g2 = (color2 >> 8) & 255;
+    const b2 = color2 & 255;
+
+    const r = Math.round(r1 + factor * (r2 - r1));
+    const g = Math.round(g1 + factor * (g2 - g1));
+    const b = Math.round(b1 + factor * (b2 - b1));
+
+    return (r << 16) | (g << 8) | b;
+}
+
+function animateVantaColor(targetColor) {
+    if (!window.vantaEffect) return;
+
+    // Cancel any ongoing animation
+    if (vantaAnimationId) {
+        cancelAnimationFrame(vantaAnimationId);
+    }
+
+    const startColor = window.vantaEffect.options.color;
+    const duration = 1500; // A bit slow as requested
+    let startTime = null;
+
+    function step(timestamp) {
+        if (!startTime) startTime = timestamp;
+        const elapsed = timestamp - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        const newColor = interpolateColor(startColor, targetColor, progress);
+
+        window.vantaEffect.setOptions({ color: newColor });
+
+        if (progress < 1) {
+            vantaAnimationId = requestAnimationFrame(step);
+        } else {
+            vantaAnimationId = null;
+        }
+    }
+
+    vantaAnimationId = requestAnimationFrame(step);
+}
+
+/* BACKGROUND EFFECT CONTROLLER */
+function updateBackgroundEffect(type, customColor = null) {
+  if (!window.vantaEffect) return;
+
+  let targetColor;
+
+  switch (type) {
+    case 'rate':
+      targetColor = 0xffaa00; // Gold
+      break;
+    case 'report':
+      targetColor = 0xff4d4d; // Red
+      break;
+    case 'settings':
+      targetColor = 0x2979ff; // Blue
+      break;
+    case 'trust':
+      targetColor = customColor ? parseInt(customColor.replace('#', '0x')) : 0x8b5cf6;
+      break;
+    case 'default':
+    default:
+      targetColor = 0x8b5cf6; // Default Purple
+      break;
+  }
+  
+  // Animate only the 'color' property, keeping the background dark as requested.
+  animateVantaColor(targetColor);
+}
+
 /* PAGE NAVIGATION */
 function showPage(page, defaultTab = 'profile', activitySubTab = 'reports') {
+  // Handle Background Blur for specific pages (Profile, Login, Text Pages)
+  const blurredPages = ['profile', 'login', 'privacy', 'terms', 'admin-dashboard'];
+  window.isBlurredPage = blurredPages.includes(page);
+
+  // Update Background based on Page - Moved to top to ensure execution
+  if (page === 'home') {
+    updateBackgroundEffect('default');
+  } else if (page === 'profile') {
+    updateBackgroundEffect('settings');
+  } else if (page === 'report') {
+    const rateBtn = document.getElementById('tab-rate');
+    if (rateBtn && rateBtn.classList.contains('active')) updateBackgroundEffect('rate');
+    else updateBackgroundEffect('report');
+  } else if (page === 'details-view') {
+    // details-view is handled by populateDetailsView
+  } else {
+    // Login, Admin, etc. -> Default Purple
+    updateBackgroundEffect('default');
+  }
+
   if (page === 'report' && !auth.currentUser) {
     showToast("You must be logged in to report a scam.", "error");
     showPage('login');
@@ -553,6 +653,13 @@ function injectGlobalStyles() {
       border-color: #8b5cf6 !important;
       box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
     }
+
+    .mini-card {
+      background: rgba(22, 27, 34, 0.7) !important;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(48, 54, 61, 0.6) !important;
+    }
     
     /* Mobile Optimizations */
     @media (max-width: 600px) {
@@ -762,7 +869,7 @@ function renderPreview(data, container) {
   const displayDesc = description ? description : (loading ? 'Fetching preview...' : 'No description available.');
 
   container.innerHTML = `
-    <div class="preview-widget" style="background:rgba(22, 27, 34, 0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); overflow:hidden; transition: all 0.2s ease; ${loading ? 'opacity:0.8' : ''}">
+    <div class="preview-widget" style="background:#0f1115; border-radius: 12px; border: 1px solid #30363d; overflow:hidden; transition: all 0.2s ease; ${loading ? 'opacity:0.8' : ''}">
       ${image ? `
       <div style="width:100%; height:160px; overflow:hidden; border-bottom:1px solid #30363d; position:relative;">
         <img src="${image}" style="width:100%; height:100%; object-fit:cover;">
@@ -808,11 +915,13 @@ function switchTab(tab) {
     scamForm.classList.add('hidden');
     rateBtn.classList.add('active');
     scamBtn.classList.remove('active');
+    updateBackgroundEffect('rate');
   } else {
     rateForm.classList.add('hidden');
     scamForm.classList.remove('hidden');
     rateBtn.classList.remove('active');
     scamBtn.classList.add('active');
+    updateBackgroundEffect('report');
   }
 }
 
@@ -2134,7 +2243,7 @@ function renderReportBatch(reset = false) {
 
         card.innerHTML = `
            ${imgHtml}
-           <div style="padding:12px; flex:1; display:flex; flex-direction:column;">
+           <div style="padding:20px; flex:1; display:flex; flex-direction:column;">
                <div style="font-weight:bold; font-size:1em; margin-bottom:6px; line-height:1.3; color:#f0f6fc; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${escapeHTML(metaTitle)}</div>
                ${metaDesc ? `<div style="font-size:0.85em; color:#8b949e; margin-bottom:10px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">${escapeHTML(metaDesc)}</div>` : ''}
                
@@ -2147,7 +2256,7 @@ function renderReportBatch(reset = false) {
                        <button onclick="event.stopPropagation(); shareItem('${escapeHTML(group.url)}', '${escapeHTML(finalDisplayName)}', '${status.text}')" style="background:none; border:none; color:#8b949e; cursor:pointer; padding:0;" title="Share">
                            <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
                        </button>
-                       <div class="warning-label" style="color:${status.color}; font-size:0.75em; padding:2px 6px; margin:0;">
+                       <div class="warning-label" style="color:${status.color}; font-size:0.75em; margin:0; background:${status.color}15;">
                            ${status.text}
                        </div>
                    </div>
@@ -2165,7 +2274,7 @@ function renderReportBatch(reset = false) {
         card.innerHTML = `
           <div class="card-header" style="align-items:flex-start; justify-content:space-between;">
             <div style="display:flex; align-items:flex-start;">
-                <div style="width:40px; height:40px; margin-right:10px; flex-shrink:0;">${platform.icon}</div>
+                <div style="width:44px; height:44px; margin-right:12px; flex-shrink:0;">${platform.icon}</div>
                 <div>
                       <div class="phone-number" style="word-break: break-word;">${escapeHTML(username)}</div>
                     <div class="location-badge">${flagDisplay}${platform.name}</div>
@@ -2176,7 +2285,7 @@ function renderReportBatch(reset = false) {
             </button>
           </div>
             <div class="known-as" style="margin-top:5px;">Reported as: <strong style="color:#f0f6fc;">${escapeHTML(mostCommonName)}</strong></div>
-          <div class="warning-label" style="color:${status.color}; margin-top:auto;">
+          <div class="warning-label" style="color:${status.color}; margin-top:auto; background:${status.color}15;">
             <span style="width:8px; height:8px; background:${status.color}; border-radius:50%; display:inline-block; margin-right:6px; box-shadow:0 0 5px ${status.color};"></span>
             ${status.text}
           </div>
@@ -2190,8 +2299,8 @@ function renderReportBatch(reset = false) {
             <div class="card-user" style="word-break: break-word;">${finalDisplayName}</div>
           </div>
           <div class="known-as">Profile: <strong>${escapeHTML(username)}</strong> (${group.names.length} reports)</div>
-          ${displayImage ? `<img src="${displayImage}">` : ''}
-          <div class="warning-label" style="color:${status.color}">
+          ${displayImage ? `<img src="${displayImage}" style="border-radius:16px; margin-top:12px;">` : ''}
+          <div class="warning-label" style="color:${status.color}; background:${status.color}15;">
             <span style="width:8px; height:8px; background:${status.color}; border-radius:50%; display:inline-block; margin-right:6px; box-shadow:0 0 5px ${status.color};"></span>
             ${status.text}
           </div>
@@ -2421,7 +2530,7 @@ async function renderRatings(searchQuery = "", sortType = "trending", countryFil
 
           card.innerHTML = `
              ${imgHtml}
-             <div style="padding:12px; flex:1; display:flex; flex-direction:column;">
+             <div style="padding:20px; flex:1; display:flex; flex-direction:column;">
                  <div style="font-weight:bold; font-size:1em; margin-bottom:6px; line-height:1.3; color:#f0f6fc; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${escapeHTML(metaTitle)}</div>
                  <div style="font-size: 1.1em; color: #ffaa00; margin-bottom:8px;">${stars}</div>
                  
@@ -2430,7 +2539,7 @@ async function renderRatings(searchQuery = "", sortType = "trending", countryFil
                          <div style="width:16px; height:16px;">${platform.icon}</div>
                          <span style="max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${platform.name}</span>
                      </div>
-                     <div class="warning-label" style="color:${status.color}; font-size:0.75em; padding:2px 6px; margin:0;">
+                     <div class="warning-label" style="color:${status.color}; font-size:0.75em; margin:0; background:${status.color}15;">
                          ${status.text}
                      </div>
                  </div>
@@ -2445,14 +2554,14 @@ async function renderRatings(searchQuery = "", sortType = "trending", countryFil
           card.className = 'mini-card phone-card';
           card.innerHTML = `
               <div class="card-header" style="align-items:flex-start;">
-                  <div style="width:40px; height:40px; margin-right:10px; flex-shrink:0;">${platform.icon}</div>
+                  <div style="width:44px; height:44px; margin-right:12px; flex-shrink:0;">${platform.icon}</div>
                   <div>
                       <div class="phone-number" style="word-break: break-word;">${escapeHTML(username)}</div>
                       <div class="location-badge">${flagDisplay}${platform.name}</div>
                   </div>
               </div>
               <div class="known-as" style="font-size: 1.2em; color: #ffaa00; margin-top:10px;">${stars}</div>
-              <div class="warning-label" style="color:${status.color}; margin-top:auto;">
+              <div class="warning-label" style="color:${status.color}; margin-top:auto; background:${status.color}15;">
                 <span style="width:8px; height:8px; background:${status.color}; border-radius:50%; display:inline-block; margin-right:6px; box-shadow:0 0 5px ${status.color};"></span>
                 ${status.text}
               </div>
@@ -2465,7 +2574,7 @@ async function renderRatings(searchQuery = "", sortType = "trending", countryFil
                   <div class="card-user" style="word-break: break-word;">${displayTitle}</div>
               </div>
               <div class="known-as" style="font-size: 1.2em; color: #ffaa00;">${stars} <span style="font-size: 0.7em; color: #8b949e;">(${avgRating.toFixed(1)} avg. from ${group.ratings.length} ratings)</span></div>
-              <div class="warning-label" style="color:${status.color}; margin-top:8px;">
+              <div class="warning-label" style="color:${status.color}; margin-top:8px; background:${status.color}15;">
                 <span style="width:8px; height:8px; background:${status.color}; border-radius:50%; display:inline-block; margin-right:6px; box-shadow:0 0 5px ${status.color};"></span>
                 ${status.text}
               </div>
@@ -2602,7 +2711,9 @@ async function openDetails(url, type, highlightId = null) {
           transform: 'translateZ(0)', // Hardware acceleration
           transition: 'none',
           zIndex: '9999',
-          backgroundColor: '#161b22' // Match card background color
+          backgroundColor: 'rgba(22, 27, 34, 0.95)',
+          backdropFilter: 'blur(16px)',
+          webkitBackdropFilter: 'blur(16px)'
       });
 
       // 3. Force Reflow
@@ -2826,6 +2937,11 @@ async function populateDetailsView(url, type, highlightId = null) {
     const statusColor = status.color;
     const statusText = status.text;
 
+    // Update Background to Trust Color
+    if (!document.getElementById('details-view').classList.contains('hidden')) {
+        updateBackgroundEffect('trust', statusColor);
+    }
+
     container.innerHTML = '';
     
     // Render Header Info
@@ -2880,25 +2996,24 @@ async function populateDetailsView(url, type, highlightId = null) {
     }
 
     container.innerHTML += `
-      <div style="text-align:center; margin-bottom:24px;">
-      <div style="text-align:center; padding:15px 0; margin-bottom:20px; position:sticky; top:0; background:#161b22; z-index:100; border-bottom:1px solid #30363d;">
-        <a href="${displayUrl}" ${isPhone ? '' : `onclick="interceptLink(event, this.href, '${statusText}')"`} class="details-header-title" style="display:inline-flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:12px; text-decoration:none; color:${isVerified ? '#ffd700' : '#eaeaea'}; font-size:1.6rem; font-weight:bold; transition: opacity 0.2s; max-width: 100%;">
-          <div class="platform-icon" style="background:${platform.color}; width:48px; height:48px; font-size:24px; display:flex; align-items:center; justify-content:center;">${platform.icon}</div>
+      <div style="text-align:center; padding:16px; margin-bottom: 24px; width: 100%; position:sticky; top:10px; z-index:100; background:rgba(22, 27, 34, 0.9); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.08); border-radius:24px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);">
+        <a href="${displayUrl}" ${isPhone ? '' : `onclick="interceptLink(event, this.href, '${statusText}')"`} class="details-header-title" style="display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:10px; text-decoration:none; color:${isVerified ? '#ffd700' : '#eaeaea'}; font-size:1.3rem; font-weight:bold; transition: opacity 0.2s; max-width: 100%;">
+          <div class="platform-icon" style="background:${platform.color}; width:42px; height:42px; font-size:22px; display:flex; align-items:center; justify-content:center; border-radius:14px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); flex-shrink:0;">${platform.icon}</div>
           <span style="word-break: break-word; text-align: center;">${displayTitle}</span>
           ${verifiedBadge}
           <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:#38bdf8; opacity:0.8;"><path d="M18 13v6c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V8c0-1.1.9-2 2-2h6v2H5v11h11v-6h2zm-1.5-9H11v2h3.59l-4.83 4.83 1.41 1.41L16 7.41V11h2V4z"/></svg>
         </a>
-        <div style="font-size:0.9rem; color:#8b949e; margin-top:8px;">${platform.name}</div>
-        <div class="details-header-buttons" style="margin-top:16px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-             <button onclick="rateLinkFromModal(decodeURIComponent(&quot;${encodeURIComponent(url)}&quot;))" style="background:rgba(255, 170, 0, 0.1); border:1px solid rgba(255, 170, 0, 0.3); color:#ffaa00; padding:8px 20px; border-radius:50px; font-size:0.9rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:8px; transition:all 0.2s;">
+        <div style="font-size:0.85rem; color:#8b949e; margin-top:4px; margin-bottom:12px;">${platform.name}</div>
+        <div class="details-header-buttons" style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
+             <button onclick="rateLinkFromModal(decodeURIComponent(&quot;${encodeURIComponent(url)}&quot;))" style="background:rgba(255, 170, 0, 0.1); border:1px solid rgba(255, 170, 0, 0.3); color:#ffaa00; padding:8px 16px; border-radius:12px; font-size:0.85rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s; flex: 1; justify-content: center; min-width: 100px; max-width: 140px;">
                 <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor; transform:translateY(-1px);"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-                Rate User
+                Rate
             </button>
-             <button onclick="reportLinkFromModal(decodeURIComponent(&quot;${encodeURIComponent(url)}&quot;))" style="background:rgba(255, 77, 77, 0.1); border:1px solid rgba(255, 77, 77, 0.3); color:#ff4d4d; padding:8px 20px; border-radius:50px; font-size:0.9rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:8px; transition:all 0.2s;">
+             <button onclick="reportLinkFromModal(decodeURIComponent(&quot;${encodeURIComponent(url)}&quot;))" style="background:rgba(255, 77, 77, 0.1); border:1px solid rgba(255, 77, 77, 0.3); color:#ff4d4d; padding:8px 16px; border-radius:12px; font-size:0.85rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s; flex: 1; justify-content: center; min-width: 100px; max-width: 140px;">
                 <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M15.73 3H8.27L3 8.27v7.46L8.27 21h7.46L21 15.73V8.27L15.73 3zM12 17.3c-.72 0-1.3-.58-1.3-1.3 0-.72.58-1.3 1.3-1.3.72 0 1.3.58 1.3 1.3 0 .72-.58 1.3-1.3 1.3zm1-4.3h-2V7h2v6z"/></svg>
-                Report User
+                Report
             </button>
-             <button onclick="shareItem(decodeURIComponent(&quot;${encodeURIComponent(url)}&quot;), decodeURIComponent(&quot;${encodeURIComponent(enrichedName || username)}&quot;), '${statusText}')" style="background:rgba(139, 92, 246, 0.1); border:1px solid rgba(139, 92, 246, 0.3); color:#8b5cf6; padding:8px 20px; border-radius:50px; font-size:0.9rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:8px; transition:all 0.2s;">
+             <button onclick="shareItem(decodeURIComponent(&quot;${encodeURIComponent(url)}&quot;), decodeURIComponent(&quot;${encodeURIComponent(enrichedName || username)}&quot;), '${statusText}')" style="background:rgba(139, 92, 246, 0.1); border:1px solid rgba(139, 92, 246, 0.3); color:#8b5cf6; padding:8px 16px; border-radius:12px; font-size:0.85rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s; flex: 1; justify-content: center; min-width: 80px; max-width: 100px;">
                 <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
                 Share
             </button>
@@ -3028,10 +3143,10 @@ async function populateDetailsView(url, type, highlightId = null) {
             </div>
           ` : ''}
           ${showAdminControls && !isAdmin ? `
-             <button onclick="toggleUserVerification('${item.uid}', ${isVerifiedUser}, '${safeName}', '${rPhoto}')" style="background:none; border:1px solid #30363d; border-radius:4px; cursor:pointer; color:#8b949e; padding:2px 6px; font-size:0.7em; margin-left:5px;" title="${isVerifiedUser ? 'Revoke Verification' : 'Grant Verification'}">
+             <button onclick="toggleUserVerification('${item.uid}', ${isVerifiedUser}, '${safeName}', '${rPhoto}')" style="background:none; border:1px solid #30363d; border-radius:12px; cursor:pointer; color:#8b949e; padding:4px 10px; font-size:0.7em; margin-left:5px;" title="${isVerifiedUser ? 'Revoke Verification' : 'Grant Verification'}">
                 ${isVerifiedUser ? 'Unverify' : 'Verify'}
              </button>
-             <button onclick="toggleUserBan('${item.uid}', ${isBanned}, '${safeName}', '${rPhoto}')" style="background:none; border:1px solid #ff4d4d; border-radius:4px; cursor:pointer; color:#ff4d4d; padding:2px 6px; font-size:0.7em; margin-left:5px;" title="${isBanned ? 'Unban User' : 'Ban User'}">
+             <button onclick="toggleUserBan('${item.uid}', ${isBanned}, '${safeName}', '${rPhoto}')" style="background:none; border:1px solid #ff4d4d; border-radius:12px; cursor:pointer; color:#ff4d4d; padding:4px 10px; font-size:0.7em; margin-left:5px;" title="${isBanned ? 'Unban User' : 'Ban User'}">
                 ${isBanned ? 'Unban' : 'Ban'}
              </button>
           ` : ''}
@@ -3103,7 +3218,7 @@ async function populateDetailsView(url, type, highlightId = null) {
             <span style="opacity:0.8">Reported Name: ${escapeHTML(item.displayName)}</span>
           </div>
           ${item.description ? `<p style="margin:10px 0; font-size:0.95em; color:#eaeaea; line-height:1.5;">${escapeHTML(item.description)}</p>` : ''}
-          ${imagesHtml}
+          ${imagesHtml ? `<div style="margin-top:12px; border-radius:12px; overflow:hidden;">${imagesHtml}</div>` : ''}
         `;
       } else {
         const stars = '★'.repeat(item.rating) + '☆'.repeat(5 - item.rating);
@@ -3160,9 +3275,9 @@ async function showUserProfile(uid, name, photo) {
     
     // Initial Skeleton with Cleaner Layout
     overlay.innerHTML = `
-        <div class="custom-modal" style="max-width:500px; width:95%; max-height:90vh; display:flex; flex-direction:column; padding:0; overflow:hidden; background:rgba(22, 27, 34, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border:1px solid rgba(255,255,255,0.1); border-radius:12px;">
+        <div class="custom-modal" style="max-width:500px; width:95%; max-height:90vh; display:flex; flex-direction:column; padding:0; overflow:hidden; background:#0d1117; border:1px solid #30363d; border-radius:12px;">
             <!-- Header -->
-            <div style="padding:24px; background:linear-gradient(180deg, rgba(22, 27, 34, 0.8) 0%, rgba(13, 17, 23, 0.8) 100%); border-bottom:1px solid #30363d; text-align:center; position:relative;">
+            <div style="padding:24px; background:linear-gradient(180deg, #161b22 0%, #0d1117 100%); border-bottom:1px solid #30363d; text-align:center; position:relative;">
                 <button onclick="document.getElementById('user-profile-modal').remove()" style="position:absolute; top:15px; right:15px; background:none; border:none; color:#8b949e; cursor:pointer; padding:5px;">
                     <svg viewBox="0 0 24 24" style="width:24px; height:24px; fill:currentColor;"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
                 </button>
@@ -3196,7 +3311,7 @@ async function showUserProfile(uid, name, photo) {
             </div>
 
             <!-- Content -->
-            <div id="user-profile-content" style="padding:0; overflow-y:auto; flex:1; background:transparent;">
+            <div id="user-profile-content" style="padding:0; overflow-y:auto; flex:1; background:#0d1117;">
                 <div style="padding:20px;">
                     <div class="skeleton" style="width:100%; height:80px; margin-bottom:10px;"></div>
                     <div class="skeleton" style="width:100%; height:80px;"></div>
@@ -3204,7 +3319,7 @@ async function showUserProfile(uid, name, photo) {
             </div>
             
             <!-- Footer Actions -->
-            <div id="profile-footer" style="padding:15px 20px; border-top:1px solid #30363d; background:rgba(22, 26, 34, 0.6); display:flex; justify-content:flex-end; display:none;">
+            <div id="profile-footer" style="padding:15px 20px; border-top:1px solid #30363d; background:#161b22; display:flex; justify-content:flex-end; display:none;">
             </div>
         </div>
     `;
@@ -5452,7 +5567,7 @@ async function interceptLink(e, url, riskStatus) {
             ${isHighRisk ? '<br><small>Proceed with extreme caution.</small>' : ''}
         </div>
         <div style="margin-top:15px; padding-top:15px; border-top:1px solid #30363d;">
-            <button onclick="reportLinkFromModal(decodeURIComponent(&quot;${encodeURIComponent(url)}&quot;))" style="background:none; border:none; color:#ff4d4d; font-size:0.9em; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; width:100%; padding:5px; border-radius:4px; transition:background 0.2s;">
+            <button onclick="reportLinkFromModal(decodeURIComponent(&quot;${encodeURIComponent(url)}&quot;))" style="background:rgba(255, 77, 77, 0.1); border:none; color:#ff4d4d; font-size:0.9em; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; width:100%; padding:12px; border-radius:16px; transition:background 0.2s;">
                 <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg>
                 Report this link as unsafe
             </button>
@@ -5587,12 +5702,13 @@ document.addEventListener('DOMContentLoaded', () => {
             left: '0',
             width: '100%',
             height: '100vh',
-            zIndex: '0',
-            pointerEvents: 'none'
+            zIndex: '-1',
+            pointerEvents: 'none',
+            filter: 'blur(4px) brightness(70%)'
         });
         document.body.prepend(bg);
 
-        window.VANTA.NET({
+        window.vantaEffect = window.VANTA.NET({
             el: "#vanta-canvas",
             mouseControls: true,
             touchControls: true,
@@ -5601,8 +5717,8 @@ document.addEventListener('DOMContentLoaded', () => {
             minWidth: 200.00,
             scale: 1.00,
             scaleMobile: 1.00,
-            color: 0x8b5cf6,       // Matches your --accent-primary
-            backgroundColor: 0x0f1115, // Matches your --bg-dark
+            color: 0x8b5cf6,
+            backgroundColor: 0x0f1115, // Keep this dark background
             points: 12.00,
             maxDistance: 22.00,
             spacing: 18.00

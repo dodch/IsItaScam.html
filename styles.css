@@ -3,7 +3,7 @@
 ===================== */
 :root {
   --bg-dark: #0f1115;
-  --bg-card: rgba(22, 27, 34, 0.6);
+  --bg-card: #161b22;
   --border-color: #30363d;
   --accent-primary: #8b5cf6;
   --text-main: #f0f6fc;
@@ -304,8 +304,6 @@ button {
 ===================== */
 section {
   padding: 140px 20px 40px;
-  position: relative;
-  z-index: 1;
 }
 
 #home {
@@ -313,13 +311,9 @@ section {
 }
 
 .card {
-  background: rgba(22, 27, 34, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  background: #161a22;
   padding: 16px;
-  border-radius: 10px;
+  border-radius: 20px;
   margin-bottom: 16px;
 }
 
@@ -341,14 +335,12 @@ section {
 .auth-container {
   width: 100%;
   margin: 0;
-  background: rgba(22, 27, 34, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  background: #161a22;
   padding: 32px;
-  border-radius: 24px;
+  border-radius: 28px;
+  border: 1px solid #30363d;
   text-align: center;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -371,13 +363,11 @@ section {
 form {
   width: 100%;
   margin: 0;
-  background: rgba(22, 27, 34, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  background: #161a22;
   padding: 32px;
-  border-radius: 24px;
+  border-radius: 28px;
+  border: 1px solid #30363d;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
 }
 
 form h1 {
@@ -398,10 +388,9 @@ form textarea {
   width: 100%;
   padding: 14px 16px;
   margin-bottom: 16px;
-  border-radius: 12px;
+  border-radius: 16px;
   border: 1px solid #30363d;
-  background: rgba(13, 17, 23, 0.6);
-  backdrop-filter: blur(4px);
+  background: #0d1117;
   color: #eaeaea;
   font-size: 1rem;
   transition: all 0.2s ease;
@@ -411,7 +400,7 @@ form input:focus,
 form textarea:focus {
   border-color: #4da3ff;
   box-shadow: 0 0 0 4px rgba(77, 163, 255, 0.1);
-  background: rgba(22, 26, 34, 0.8);
+  background: #161a22;
   outline: none;
 }
 
@@ -463,12 +452,10 @@ footer {
   width: 100%;
   margin: 0 0 24px 0;
   display: flex;
-  background: rgba(22, 27, 34, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #0d1117;
   border-radius: 50px;
   padding: 4px;
+  border: 1px solid #30363d;
 }
 
 .tab-btn {
@@ -518,12 +505,10 @@ footer {
 }
 
 .rating-container {
-  background: rgba(22, 27, 34, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #0d1117;
   padding: 20px;
   border-radius: 16px;
+  border: 1px solid #30363d;
   margin-bottom: 20px;
   text-align: center;
 }
@@ -579,7 +564,7 @@ footer {
   border-radius: 16px;
   cursor: pointer;
   transition: all 0.2s;
-  background: rgba(13, 17, 23, 0.6);
+  background: #0d1117;
   color: #8b949e;
   font-weight: 600;
 }
@@ -603,7 +588,7 @@ footer {
   border: none;
   font-weight: bold;
   font-size: 1.1rem;
-  border-radius: 12px;
+  border-radius: 16px;
   color: #0f1115;
   margin-top: 10px;
   transition: transform 0.2s, box-shadow 0.2s;
@@ -791,10 +776,8 @@ footer {
 .mini-card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 16px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  border-radius: 24px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -811,10 +794,8 @@ footer {
 .modern-card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 24px;
   overflow: hidden;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -831,12 +812,12 @@ footer {
 }
 
 .platform-icon {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: 14px;
   font-size: 18px;
   font-weight: bold;
   color: white;
@@ -854,18 +835,22 @@ footer {
   font-size: 0.85em;
   color: #8b949e;
   background: #21262d;
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 6px 12px;
+  border-radius: 20px;
   align-self: flex-start;
 }
 
 .warning-label {
   color: #ff4d4d;
   font-weight: bold;
-  font-size: 0.9em;
+  font-size: 0.85em;
   display: flex;
   align-items: center;
   gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: rgba(255, 77, 77, 0.08);
+  width: fit-content;
 }
 
 .delete-btn {
@@ -873,7 +858,7 @@ footer {
   color: white;
   border: none;
   padding: 8px;
-  border-radius: 6px;
+  border-radius: 12px;
   margin-top: 10px;
   width: 100%;
   font-weight: bold;
@@ -971,13 +956,10 @@ footer {
    DETAILS VIEW
 ===================== */
 .review-card {
-  background: rgba(22, 27, 34, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  background: #161a22;
+  border: 1px solid #30363d;
   padding: 16px;
-  border-radius: 8px;
+  border-radius: 20px;
   margin-bottom: 12px;
 }
 
@@ -993,13 +975,11 @@ footer {
    TRUST SCORE & CHART
 ===================== */
 .trust-score-container {
-  background: rgba(22, 27, 34, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
+  background: #0d1117;
+  border-radius: 24px;
   padding: 24px;
   margin-bottom: 24px;
+  border: 1px solid #30363d;
   box-shadow: 0 10px 30px rgba(0,0,0,0.2);
 }
 
@@ -1214,12 +1194,10 @@ footer {
 }
 
 .legal-content ul {
-  background: rgba(22, 27, 34, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #161a22;
   padding: 20px 40px;
   border-radius: 12px;
+  border: 1px solid #30363d;
 }
 
 .legal-content li {
@@ -1249,7 +1227,7 @@ footer {
 .skeleton-card {
   background: #161a22;
   border: 1px solid #30363d;
-  border-radius: 12px;
+  border-radius: 24px;
   padding: 16px;
   display: flex;
   flex-direction: column;
@@ -1298,9 +1276,9 @@ form:not(.hidden),
   width: 100%;
   padding: 14px 16px;
   margin-bottom: 20px;
-  border-radius: 12px;
+  border-radius: 16px;
   border: 1px solid #30363d;
-  background: rgba(13, 17, 23, 0.6);
+  background: #0d1117;
   color: #eaeaea;
   font-size: 1rem;
   cursor: pointer;
@@ -1326,10 +1304,10 @@ form:not(.hidden),
 
 .proof-upload-box {
   border: 2px dashed #30363d;
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 20px;
   text-align: center;
-  background: rgba(13, 17, 23, 0.6);
+  background: #0d1117;
   transition: all 0.2s;
   display: flex;
   flex-direction: column;
@@ -1364,7 +1342,7 @@ form:not(.hidden),
   width: 100%;
   height: 120px;
   object-fit: cover;
-  border-radius: 6px;
+  border-radius: 12px;
   margin-top: 10px;
   display: none;
   border: 1px solid #30363d;
@@ -1382,7 +1360,7 @@ form:not(.hidden),
   background: rgba(255, 77, 77, 0.15);
   color: #ff4d4d;
   padding: 4px 8px;
-  border-radius: 4px;
+  border-radius: 8px;
   font-size: 0.8em;
   font-weight: bold;
   display: inline-block;
@@ -1550,11 +1528,9 @@ form:not(.hidden),
 }
 
 .custom-modal {
-  background: rgba(22, 26, 34, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: #161a22;
   border: 1px solid #30363d;
-  border-radius: 16px;
+  border-radius: 28px;
   padding: 24px;
   width: 90%;
   max-width: 400px;
@@ -1589,7 +1565,7 @@ form:not(.hidden),
 
 .modal-btn {
   padding: 10px 20px;
-  border-radius: 8px;
+  border-radius: 12px;
   border: none;
   font-weight: 600;
   cursor: pointer;
