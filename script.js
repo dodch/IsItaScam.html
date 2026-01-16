@@ -762,7 +762,7 @@ function renderPreview(data, container) {
   const displayDesc = description ? description : (loading ? 'Fetching preview...' : 'No description available.');
 
   container.innerHTML = `
-    <div class="preview-widget" style="background:#0f1115; border-radius: 12px; border: 1px solid #30363d; overflow:hidden; transition: all 0.2s ease; ${loading ? 'opacity:0.8' : ''}">
+    <div class="preview-widget" style="background:rgba(22, 27, 34, 0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); overflow:hidden; transition: all 0.2s ease; ${loading ? 'opacity:0.8' : ''}">
       ${image ? `
       <div style="width:100%; height:160px; overflow:hidden; border-bottom:1px solid #30363d; position:relative;">
         <img src="${image}" style="width:100%; height:100%; object-fit:cover;">
@@ -3160,9 +3160,9 @@ async function showUserProfile(uid, name, photo) {
     
     // Initial Skeleton with Cleaner Layout
     overlay.innerHTML = `
-        <div class="custom-modal" style="max-width:500px; width:95%; max-height:90vh; display:flex; flex-direction:column; padding:0; overflow:hidden; background:#0d1117; border:1px solid #30363d; border-radius:12px;">
+        <div class="custom-modal" style="max-width:500px; width:95%; max-height:90vh; display:flex; flex-direction:column; padding:0; overflow:hidden; background:rgba(22, 27, 34, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border:1px solid rgba(255,255,255,0.1); border-radius:12px;">
             <!-- Header -->
-            <div style="padding:24px; background:linear-gradient(180deg, #161b22 0%, #0d1117 100%); border-bottom:1px solid #30363d; text-align:center; position:relative;">
+            <div style="padding:24px; background:linear-gradient(180deg, rgba(22, 27, 34, 0.8) 0%, rgba(13, 17, 23, 0.8) 100%); border-bottom:1px solid #30363d; text-align:center; position:relative;">
                 <button onclick="document.getElementById('user-profile-modal').remove()" style="position:absolute; top:15px; right:15px; background:none; border:none; color:#8b949e; cursor:pointer; padding:5px;">
                     <svg viewBox="0 0 24 24" style="width:24px; height:24px; fill:currentColor;"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
                 </button>
@@ -3196,7 +3196,7 @@ async function showUserProfile(uid, name, photo) {
             </div>
 
             <!-- Content -->
-            <div id="user-profile-content" style="padding:0; overflow-y:auto; flex:1; background:#0d1117;">
+            <div id="user-profile-content" style="padding:0; overflow-y:auto; flex:1; background:transparent;">
                 <div style="padding:20px;">
                     <div class="skeleton" style="width:100%; height:80px; margin-bottom:10px;"></div>
                     <div class="skeleton" style="width:100%; height:80px;"></div>
@@ -3204,7 +3204,7 @@ async function showUserProfile(uid, name, photo) {
             </div>
             
             <!-- Footer Actions -->
-            <div id="profile-footer" style="padding:15px 20px; border-top:1px solid #30363d; background:#161b22; display:flex; justify-content:flex-end; display:none;">
+            <div id="profile-footer" style="padding:15px 20px; border-top:1px solid #30363d; background:rgba(22, 26, 34, 0.6); display:flex; justify-content:flex-end; display:none;">
             </div>
         </div>
     `;
@@ -5576,6 +5576,38 @@ document.addEventListener('DOMContentLoaded', () => {
     initSearchUI();
     window.addEventListener('resize', updateTabIndicator);
     window.addEventListener('load', updateTabIndicator);
+
+    // Initialize Vanta.js Net Background
+    if (window.VANTA) {
+        const bg = document.createElement('div');
+        bg.id = 'vanta-canvas';
+        Object.assign(bg.style, {
+            position: 'fixed',
+            top: '0',
+            left: '0',
+            width: '100%',
+            height: '100vh',
+            zIndex: '0',
+            pointerEvents: 'none'
+        });
+        document.body.prepend(bg);
+
+        window.VANTA.NET({
+            el: "#vanta-canvas",
+            mouseControls: true,
+            touchControls: true,
+            gyroControls: false,
+            minHeight: 200.00,
+            minWidth: 200.00,
+            scale: 1.00,
+            scaleMobile: 1.00,
+            color: 0x8b5cf6,       // Matches your --accent-primary
+            backgroundColor: 0x0f1115, // Matches your --bg-dark
+            points: 12.00,
+            maxDistance: 22.00,
+            spacing: 18.00
+        });
+    }
 
     // Logo Click -> Home
     const logo = document.querySelector('.navbar .logo');

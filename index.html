@@ -13,6 +13,8 @@
 <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/nsfwjs@latest/dist/nsfwjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js"></script>
 <style>
   /* Glow effect for returning to grid item */
   .glow-effect {
@@ -22,10 +24,6 @@
     0% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7); transform: scale(1); }
     50% { box-shadow: 0 0 20px 5px rgba(139, 92, 246, 0.5); transform: scale(1.02); }
     100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); transform: scale(1); }
-  }
-  /* Ensure details view has background for animation */
-  #details-view {
-    background-color: #0d1117;
   }
 
   /* --- MODERN GRID STYLES --- */
@@ -40,8 +38,10 @@
   }
   
   .mini-card {
-    background: #161b22;
-    border: 1px solid #30363d;
+    background: rgba(22, 27, 34, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 32px; /* Significantly rounded corners */
     padding: 24px;
     display: flex;
