@@ -666,6 +666,10 @@ function injectGlobalStyles() {
       border: 1px solid rgba(48, 54, 61, 0.6) !important;
     }
     
+    #notification-list {
+      padding-top: 10px !important;
+    }
+    
     /* Mobile Optimizations */
     @media (max-width: 600px) {
         .details-header-title { font-size: 1.25rem !important; }
@@ -5092,11 +5096,42 @@ async function deleteActivityItem(collectionName, docId) {
 
 function toggleNotifications() {
   const dropdown = document.getElementById('notification-dropdown');
+  const btn = document.querySelector('.notification-btn');
   if (dropdown) {
-    dropdown.classList.toggle('hidden');
+    dropdown.classList.remove('hidden'); // Ensure legacy hidden class is removed
+    const isActive = dropdown.classList.toggle('active');
+    if (btn) btn.classList.toggle('active', isActive);
+    
+    // Dynamic Arrow Positioning
+    if (isActive && btn) {
+        const btnRect = btn.getBoundingClientRect();
+        let dropRight;
+        let dropWidth;
+
+        // Determine Dropdown Geometry based on Viewport (Ignore transform scale)
+        if (window.innerWidth <= 600) {
+            // Mobile: Fixed position (left:16px, right:16px)
+            dropRight = window.innerWidth - 16;
+            dropWidth = window.innerWidth - 32;
+        } else {
+            // Desktop: Absolute right:0 relative to wrapper
+            // We assume the wrapper wraps the button tightly or aligns with it
+            const wrapper = btn.closest('.notification-wrapper');
+            dropRight = wrapper ? wrapper.getBoundingClientRect().right : btnRect.right;
+            dropWidth = 320; // Fixed width from CSS
+        }
+
+        const btnCenter = btnRect.left + (btnRect.width / 2);
+        // Calculate 'right' value: Distance from right edge of dropdown to center of button, minus half arrow width (6px)
+        const arrowRight = (dropRight - btnCenter) - 6;
+        
+        // Clamp value to keep arrow within rounded corners (approx 24px radius)
+        const finalRight = Math.max(24, Math.min(arrowRight, dropWidth - 24));
+        dropdown.style.setProperty('--arrow-pos', `${finalRight}px`);
+    }
     
     // If opening, mark all as read
-    if (!dropdown.classList.contains('hidden') && auth.currentUser) {
+    if (isActive && auth.currentUser) {
         const badge = document.getElementById('notification-badge');
         if (badge) badge.classList.add('hidden');
         localStorage.setItem('lastReadTime_' + auth.currentUser.uid, Date.now());
@@ -5914,7 +5949,7 @@ document.addEventListener('click', (event) => {
   const notifDropdown = document.getElementById('notification-dropdown');
   const notifBtn = document.querySelector('.notification-btn');
   
-  if (notifDropdown && !notifDropdown.classList.contains('hidden')) {
+  if (notifDropdown && notifDropdown.classList.contains('active')) {
       if (!notifDropdown.contains(event.target) && !notifBtn.contains(event.target)) {
           toggleNotifications();
       }

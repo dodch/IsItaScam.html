@@ -661,12 +661,30 @@ footer {
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: color 0.3s ease, filter 0.3s ease;
+}
+
+/* Active Golden Icon */
+.notification-btn.active {
+  color: #ffd700;
+  background: rgba(255, 215, 0, 0.15);
+  border-radius: 50%;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
 }
 
 .notification-btn svg {
   width: 24px;
   height: 24px;
   fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 0;
+  transition: fill 0.3s ease;
+}
+
+/* Fill icon when active */
+.notification-btn.active svg {
+  fill: #ffd700;
+  filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
 }
 
 .notification-badge {
@@ -689,27 +707,91 @@ footer {
 .notification-dropdown {
   position: absolute;
   top: 100%;
-  right: -60px; /* Align slightly to the right */
-  width: 300px;
+  right: 0;
+  width: 320px;
   background: #161a22;
   border: 1px solid #30363d;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  border-radius: 28px;
+  padding: 8px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.6);
   z-index: 2000;
-  overflow: hidden;
-  margin-top: 10px;
+  overflow: visible !important; /* Force arrow visibility */
+  margin-top: 12px;
+  
+  /* Chat Bubble Animation State */
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.8) translate(10px, -20px);
+  transform-origin: top right;
+  transition: opacity 0.3s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), visibility 0.3s;
+}
+
+/* Chat Bubble Arrow */
+.notification-dropdown::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  right: var(--arrow-pos, 24px); /* Default fallback */
+  width: 12px;
+  height: 12px;
+  background: #161a22;
+  border-left: 1px solid #30363d;
+  border-top: 1px solid #30363d;
+  transform: rotate(45deg);
+  z-index: 2001;
+}
+
+.notification-dropdown.active {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1) translate(0, 0);
+}
+
+/* Mobile Viewport Fix */
+@media (max-width: 600px) {
+  .notification-dropdown {
+    position: fixed;
+    top: 70px;
+    left: 16px;
+    right: 16px;
+    width: auto;
+    margin-top: 0;
+    transform-origin: top center;
+    max-height: 80vh;
+    overflow: visible !important;
+  }
+  /* Move scrolling to list to preserve arrow visibility */
+  #notification-list {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  /* Show arrow on mobile */
+  .notification-dropdown::before {
+    display: block;
+    right: var(--arrow-pos, 62px);
+    top: -6px;
+  }
 }
 
 .notification-item {
-  padding: 12px 16px;
-  border-bottom: 1px solid #30363d;
+  padding: 12px 14px;
+  margin-bottom: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid transparent;
+  border-radius: 16px;
   display: flex;
   gap: 12px;
   align-items: start;
+  transition: background 0.2s;
 }
 
 .notification-item:last-child {
-  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.notification-item:hover {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .notif-icon {
@@ -1945,6 +2027,7 @@ form:not(.hidden),
   .navbar {
     padding: 8px 16px;
     min-height: 60px;
+    gap: 8px;
   }
   .hero {
     padding-top: 120px;
@@ -1970,14 +2053,9 @@ form:not(.hidden),
   .hamburger-btn.active span:nth-child(3) {
     transform: translateY(-6px) rotate(-45deg);
   }
-  /* Compact Home Button: Hide text, keep icon */
+  /* Hide Home Button on mobile (Logo acts as home) */
   .navbar nav a[onclick*="home"] {
-    font-size: 0 !important;
-    gap: 0 !important;
-  }
-  .navbar nav a[onclick*="home"] svg {
-    width: 24px;
-    height: 24px;
+    display: none !important;
   }
 }
 
@@ -2043,12 +2121,22 @@ form:not(.hidden),
   .navbar nav {
     gap: 12px;
   }
-  .navbar nav a[onclick*="home"] span {
-    display: none; /* Hide text on mobile */
+  /* Compact Login Button */
+  .nav-login-btn span {
+    display: none;
   }
-  .navbar nav a[onclick*="home"] {
-    padding: 6px;
+  .nav-login-btn {
+    padding: 8px;
+    border-radius: 50%;
   }
+
+  /* Compact Beta Label */
+  .beta-label {
+    margin-left: 6px;
+    font-size: 0.6em;
+    padding: 2px 5px;
+  }
+
   /* Prevent iOS Zoom on Focus */
   .search-box input {
     font-size: 16px !important;
