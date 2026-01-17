@@ -878,7 +878,7 @@ function renderPreview(data, container) {
   const displayDesc = description ? description : (loading ? 'Fetching preview...' : 'No description available.');
 
   container.innerHTML = `
-    <div class="preview-widget" style="background:#0f1115; border-radius: 12px; border: 1px solid #30363d; overflow:hidden; transition: all 0.2s ease; ${loading ? 'opacity:0.8' : ''}">
+    <div class="preview-widget" style="background:#050608; border-radius: 12px; border: 1px solid #30363d; overflow:hidden; transition: all 0.2s ease; ${loading ? 'opacity:0.8' : ''}">
       ${image ? `
       <div style="width:100%; height:160px; overflow:hidden; border-bottom:1px solid #30363d; position:relative;">
         <img src="${image}" style="width:100%; height:100%; object-fit:cover;">
@@ -1343,9 +1343,62 @@ const SearchSystem = {
     }
 };
 
+/* SEARCH PLACEHOLDER ANIMATION */
+function animateSearchPlaceholder() {
+    const input = document.getElementById('search-input');
+    if (!input) return;
+
+    const phrases = [
+        "Search for a website...",
+        "Check a phone number...",
+        "Verify a seller...",
+        "Paste a link..."
+    ];
+
+    let phraseIndex = 0;
+    let charIndex = 0;
+    let isDeleting = false;
+
+    function type() {
+        // Pause if user is focused on input
+        if (document.activeElement === input) {
+             setTimeout(type, 1000);
+             return;
+        }
+
+        const currentPhrase = phrases[phraseIndex];
+        let typeSpeed = 100;
+        
+        if (isDeleting) {
+            input.setAttribute('placeholder', currentPhrase.substring(0, charIndex - 1));
+            charIndex--;
+            typeSpeed = 50; 
+        } else {
+            input.setAttribute('placeholder', currentPhrase.substring(0, charIndex + 1));
+            charIndex++;
+            typeSpeed = 100;
+        }
+
+        if (!isDeleting && charIndex === currentPhrase.length) {
+            isDeleting = true;
+            typeSpeed = 2500; 
+        } else if (isDeleting && charIndex === 0) {
+            isDeleting = false;
+            phraseIndex = (phraseIndex + 1) % phrases.length;
+            typeSpeed = 500;
+        }
+
+        setTimeout(type, typeSpeed);
+    }
+
+    type();
+}
+
 function initSearchUI() {
     const input = document.getElementById('search-input');
     if (!input) return;
+
+    animateSearchPlaceholder();
 
     // Disable browser autocomplete to prevent overlap
     input.setAttribute('autocomplete', 'off');
@@ -3629,7 +3682,7 @@ function generateTrustChart(data, color) {
     <g class="point-group">
       <line x1="${p.x}" y1="0" x2="${p.x}" y2="${height}" stroke="${color}" stroke-width="1" stroke-dasharray="4" class="point-line" />
       <circle cx="${p.x}" cy="${p.y}" r="10" fill="transparent" style="cursor:pointer" />
-      <circle cx="${p.x}" cy="${p.y}" r="4" fill="${color}" stroke="#0f1115" stroke-width="2" class="point-dot" />
+      <circle cx="${p.x}" cy="${p.y}" r="4" fill="${color}" stroke="#050608" stroke-width="2" class="point-dot" />
       <title>Score: ${p.score}\nDate: ${new Date(p.date).toLocaleDateString()}</title>
     </g>
   `).join('');
@@ -5829,7 +5882,7 @@ document.addEventListener('DOMContentLoaded', () => {
             scale: 1.00,
             scaleMobile: 1.00,
             color: 0x8b5cf6,
-            backgroundColor: 0x0f1115, // Keep this dark background
+            backgroundColor: 0x050608, // Keep this dark background
             points: 12.00,
             maxDistance: 22.00,
             spacing: 18.00
@@ -6179,6 +6232,11 @@ window.addEventListener('scroll', () => {
   } else {
     if (navbar) navbar.classList.remove('hidden');
     if (searchBox) searchBox.classList.remove('sticky-search');
+  }
+
+  // Navbar Scrolled State
+  if (navbar) {
+    navbar.classList.toggle('scrolled', window.scrollY > 20);
   }
 
   // FAB Scroll Logic (Zoom out when scrolling down, Zoom in at top)
