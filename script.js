@@ -328,7 +328,8 @@ onAuthStateChanged(auth, (user) => {
 
   if (user) {
     // User is signed in: Show profile pic in navbar
-    navLogin.innerHTML = `<img src="${user.photoURL}" alt="Profile" style="width:28px; height:28px; border-radius:50%; vertical-align:middle; border: 2px solid #8b5cf6;">`;
+    navLogin.innerHTML = `<img src="${user.photoURL}" alt="Profile" style="width:32px; height:32px; border-radius:50%; object-fit:cover; border: 2px solid var(--accent-primary); display:block;">`;
+    navLogin.classList.remove('nav-login-btn');
     
     // Update Login Page UI to show Logout option
     if (authContainer) {
@@ -351,14 +352,18 @@ onAuthStateChanged(auth, (user) => {
     switchActivityTab('reports');
     renderActivity();
   } else {
-    // User is signed out: Show "Login" text
-    navLogin.innerHTML = 'Login';
+    // User is signed out: Show "Login" button
+    navLogin.innerHTML = `<svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;"><path d="M11 7L9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5-5-5zm9 12h-8v2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-8v2h8v14z"></path></svg> <span>Login</span>`;
+    navLogin.classList.add('nav-login-btn');
     
     if (authContainer) {
       authContainer.innerHTML = `
         <h1>Login</h1>
         <p>Sign in to submit and track reports.</p>
-        <button class="google-btn" onclick="googleLogin()">Continue with Google</button>
+        <button class="google-btn" onclick="googleLogin()">
+            <svg viewBox="0 0 24 24" style="width:20px; height:20px;"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/><path d="M1 1h22v22H1z" fill="none"/></svg>
+            Continue with Google
+        </button>
         <small style="opacity:0.6;">Firebase authentication is active.</small>
       `;
     }
@@ -2996,7 +3001,7 @@ async function populateDetailsView(url, type, highlightId = null) {
     }
 
     container.innerHTML += `
-      <div style="text-align:center; padding:16px; margin-bottom: 24px; width: 100%; position:sticky; top:10px; z-index:100; background:rgba(22, 27, 34, 0.9); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.08); border-radius:24px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);">
+      <div style="text-align:center; padding:16px; margin-bottom: 24px; width: 100%; position:relative; background:rgba(22, 27, 34, 0.9); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.08); border-radius:24px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);">
         <a href="${displayUrl}" ${isPhone ? '' : `onclick="interceptLink(event, this.href, '${statusText}')"`} class="details-header-title" style="display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:10px; text-decoration:none; color:${isVerified ? '#ffd700' : '#eaeaea'}; font-size:1.3rem; font-weight:bold; transition: opacity 0.2s; max-width: 100%;">
           <div class="platform-icon" style="background:${platform.color}; width:42px; height:42px; font-size:22px; display:flex; align-items:center; justify-content:center; border-radius:14px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); flex-shrink:0;">${platform.icon}</div>
           <span style="word-break: break-word; text-align: center;">${displayTitle}</span>
@@ -3262,6 +3267,77 @@ async function populateDetailsView(url, type, highlightId = null) {
     console.error("Error loading details:", e);
     container.innerHTML = '<p style="text-align:center; color:#ff4d4d;">Error loading details.</p>';
   }
+}
+
+/* UPDATE NOTIFICATION */
+function showUpdateNotification() {
+  let notification = document.getElementById('update-notification');
+  if (!notification) {
+    notification = document.createElement('div');
+    notification.id = 'update-notification';
+    notification.className = 'update-notification';
+    notification.innerHTML = `
+      <div style="display:flex; align-items:center; gap:12px; flex:1;">
+        <div style="width:40px; height:40px; background:rgba(56, 189, 248, 0.15); border-radius:12px; display:flex; align-items:center; justify-content:center; color:#38bdf8; flex-shrink:0;">
+            <svg viewBox="0 0 24 24" style="width:22px; height:22px; fill:currentColor;"><path d="M21 10.12h-6.78l2.74-2.82c-2.73-2.7-7.15-2.8-9.88-.1-2.73 2.71-2.73 7.08 0 9.79s7.15 2.71 9.88 0C18.32 15.65 19 14.08 19 12.1h2c0 1.98-.88 4.55-2.64 6.29-3.51 3.48-9.21 3.48-12.72 0-3.51-3.47-3.51-9.11 0-12.58 3.51-3.47 9.14-3.47 12.65 0l3.65-3.75v8.06zM14 12c0-1.1-.9-2-2-2s-2 .9-2 2 .9 2 2 2 2-.9 2-2z"/></svg>
+        </div>
+        <div>
+            <div style="font-weight:bold; color:#f0f6fc; font-size:0.95rem;">Update Available</div>
+            <div style="font-size:0.85em; color:#8b949e;">A new version is available.</div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <button class="update-btn" onclick="window.location.reload()">Refresh</button>
+        <button class="update-close" onclick="document.getElementById('update-notification').classList.remove('active')" title="Dismiss">
+            <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor;"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </div>
+    `;
+    document.body.appendChild(notification);
+  }
+  
+  // Force reflow to ensure transition plays
+  void notification.offsetWidth;
+  notification.classList.add('active');
+}
+
+/* BETA INFO MODAL */
+function showBetaInfo() {
+    const existing = document.getElementById('beta-info-modal');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'beta-info-modal';
+    overlay.className = 'custom-modal-overlay active';
+
+    overlay.innerHTML = `
+        <div class="custom-modal">
+            <div style="color: #38bdf8; font-size: 2.5rem; margin-bottom: 15px;">
+                <svg viewBox="0 0 24 24" style="width:48px; height:48px; fill:currentColor;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+            </div>
+            <div class="modal-title" style="color: #38bdf8;">Welcome to the Beta!</div>
+            <div class="modal-message" style="text-align: left; line-height: 1.6;">
+                <p>This platform is currently in <strong>exclusive beta testing</strong>. We're working hard to build the best experience for you.</p>
+                <p>You may encounter some bugs or unexpected behavior. Your feedback is invaluable to us!</p>
+                <p>If you have any issues or suggestions, please don't hesitate to reach out.</p>
+                <div style="margin-top: 20px; padding: 12px; background: #0d1117; border-radius: 8px; text-align: center;">
+                    <strong>Contact:</strong> <a href="mailto:contact@isitascam.com" style="color: #38bdf8; font-weight: bold;">contact@isitascam.com</a>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn btn-confirm" style="background: #38bdf8; color: #0d1117;" onclick="document.getElementById('beta-info-modal').remove()">Got it</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // Add a click listener to the overlay itself to close the modal
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) {
+            overlay.remove();
+        }
+    });
 }
 
 /* SHOW USER PROFILE MODAL */
@@ -5730,6 +5806,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (logo) {
         logo.style.cursor = 'pointer';
         logo.onclick = (e) => { e.preventDefault(); showPage('home'); };
+
+        // Inject Beta Label
+        const betaLabel = document.createElement('div');
+        betaLabel.className = 'beta-label';
+        betaLabel.innerText = 'BETA';
+        betaLabel.title = 'Learn more about our Beta phase';
+        betaLabel.onclick = showBetaInfo;
+        logo.parentNode.insertBefore(betaLabel, logo.nextSibling);
     }
 
     // Modern Home Button Icon
@@ -5783,6 +5867,8 @@ window.reportAbuse = reportAbuse;
 window.submitAbuseReport = submitAbuseReport;
 window.resolveAbuseReport = resolveAbuseReport;
 window.showUserProfile = showUserProfile;
+window.showUpdateNotification = showUpdateNotification;
+window.showBetaInfo = showBetaInfo;
 
 /* MENU TOGGLE */
 function toggleMenu() {

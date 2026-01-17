@@ -122,6 +122,28 @@ button {
   pointer-events: none;
 }
 
+/* Beta Label */
+.beta-label {
+  font-size: 0.7em;
+  font-weight: bold;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  padding: 3px 8px;
+  border-radius: 6px;
+  margin-left: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  animation: pulseBeta 2.5s infinite ease-in-out;
+  align-self: center;
+}
+
+@keyframes pulseBeta {
+  0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.3); }
+  70% { box-shadow: 0 0 0 8px rgba(56, 189, 248, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
+}
+
 .navbar .logo {
   display: flex;
   align-items: center;
@@ -351,10 +373,21 @@ section {
   padding: 14px;
   margin-top: 20px;
   background: white;
-  color: black;
+  color: #1f1f1f;
   font-weight: bold;
   border: none;
-  border-radius: 6px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 1rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.google-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(255, 255, 255, 0.15);
 }
 
 /* =====================
@@ -1461,7 +1494,10 @@ form:not(.hidden),
   transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
   pointer-events: none;
   font-weight: 500;
-  min-width: max-content;
+  min-width: auto;
+  width: max-content;
+  max-width: 88vw;
+  text-align: center;
 }
 
 .toast-notification.active {
@@ -1971,6 +2007,37 @@ form:not(.hidden),
   transform: translateY(-1px);
 }
 
+/* Modern Login Button */
+.nav-login-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent-primary);
+  color: #fff;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 50px; /* pill shape */
+  transition: all 0.2s ease;
+}
+
+.nav-login-btn:hover {
+  background: #7c3aed; /* slightly darker purple */
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  color: #fff;
+}
+
+/* Profile Image Wrapper Style */
+#nav-login:not(.nav-login-btn) {
+    padding: 0;
+    border-radius: 50%;
+    transition: transform 0.2s ease;
+}
+#nav-login:not(.nav-login-btn):hover {
+    transform: scale(1.1);
+    background: transparent; /* override other hover effects */
+}
+
 /* Mobile Adjustments for New Home Button */
 @media (max-width: 600px) {
   .navbar nav {
@@ -1985,5 +2052,17 @@ form:not(.hidden),
   /* Prevent iOS Zoom on Focus */
   .search-box input {
     font-size: 16px !important;
+  }
+
+  /* Responsive Notifications */
+  .update-notification {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+    gap: 12px;
+    padding: 16px;
+  }
+  .update-notification > div {
+    justify-content: center;
   }
 }
