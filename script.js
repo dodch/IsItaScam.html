@@ -6009,6 +6009,181 @@ document.addEventListener('click', (event) => {
   }
 });
 
+/* REPORT MENU EXPANSION */
+function openReportMenu(btn) {
+    if (document.getElementById('report-menu-overlay')) return;
+
+    const rect = btn.getBoundingClientRect();
+    const computedStyle = window.getComputedStyle(btn);
+    
+    // Create Overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'report-menu-overlay';
+    Object.assign(overlay.style, {
+        position: 'fixed',
+        top: '0',
+        left: '0',
+        width: '100%',
+        height: '100%',
+        zIndex: '9998',
+        backgroundColor: 'rgba(0,0,0,0)',
+        transition: 'all 0.3s ease',
+        backdropFilter: 'blur(0px)',
+        webkitBackdropFilter: 'blur(0px)'
+    });
+
+    // Create Card
+    const card = document.createElement('div');
+    card.id = 'report-menu-card';
+    Object.assign(card.style, {
+        position: 'fixed',
+        top: `${rect.top}px`,
+        left: `${rect.left}px`,
+        width: `${rect.width}px`,
+        height: `${rect.height}px`,
+        borderRadius: computedStyle.borderRadius,
+        backgroundColor: '#161b22', // Dark theme card background
+        border: '1px solid #30363d',
+        overflow: 'hidden',
+        transformOrigin: 'center center',
+        transition: 'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)', // Bouncy Spring
+        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+        zIndex: '9999'
+    });
+
+    // Content
+    const content = document.createElement('div');
+    content.style.opacity = '0';
+    content.style.transition = 'opacity 0.2s ease 0.2s'; // Delayed fade in
+    content.style.padding = '24px';
+    content.style.height = '100%';
+    content.style.display = 'flex';
+    content.style.flexDirection = 'column';
+    content.style.justifyContent = 'center';
+    content.style.alignItems = 'center';
+    content.style.gap = '16px';
+    content.style.boxSizing = 'border-box';
+    
+    content.innerHTML = `
+        <div style="width:48px; height:48px; background:linear-gradient(135deg, #8b5cf6, #6d28d9); border-radius:12px; display:flex; align-items:center; justify-content:center; margin-bottom:5px; box-shadow:0 4px 12px rgba(139, 92, 246, 0.3);">
+            <svg viewBox="0 0 24 24" style="width:24px; height:24px; fill:white;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+        </div>
+        <h2 style="margin:0; color:#f0f6fc; font-size:1.4rem; text-align:center;">Make a Contribution</h2>
+        <p style="color:#8b949e; text-align:center; margin:0 0 10px 0; font-size:0.95rem; line-height:1.5;">Help the community by reporting a scam or rating a trusted seller.</p>
+        
+        <button onclick="handleMenuAction('scam')" class="menu-action-btn" style="width:100%; padding:16px; background:rgba(255, 77, 77, 0.1); border:1px solid rgba(255, 77, 77, 0.3); color:#ff4d4d; border-radius:16px; font-weight:bold; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:12px; transition:transform 0.1s;">
+            <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor;"><path d="M15.73 3H8.27L3 8.27v7.46L8.27 21h7.46L21 15.73V8.27L15.73 3zM12 17.3c-.72 0-1.3-.58-1.3-1.3 0-.72.58-1.3 1.3-1.3.72 0 1.3.58 1.3 1.3 0 .72-.58 1.3-1.3 1.3zm1-4.3h-2V7h2v6z"/></svg>
+            Report a Scam
+        </button>
+        
+        <button onclick="handleMenuAction('rate')" class="menu-action-btn" style="width:100%; padding:16px; background:rgba(255, 170, 0, 0.1); border:1px solid rgba(255, 170, 0, 0.3); color:#ffaa00; border-radius:16px; font-weight:bold; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:12px; transition:transform 0.1s;">
+            <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor; transform:translateY(-1px);"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+            Rate a Seller
+        </button>
+
+        <button onclick="closeReportMenu()" style="margin-top:5px; background:none; border:none; color:#8b949e; cursor:pointer; font-size:0.9rem; padding:10px;">Cancel</button>
+    `;
+
+    // Add hover effect
+    const btns = content.querySelectorAll('.menu-action-btn');
+    btns.forEach(b => {
+        b.onmouseover = () => b.style.transform = 'scale(1.02)';
+        b.onmouseout = () => b.style.transform = 'scale(1)';
+        b.onmousedown = () => b.style.transform = 'scale(0.98)';
+        b.onmouseup = () => b.style.transform = 'scale(1.02)';
+    });
+
+    card.appendChild(content);
+    document.body.appendChild(overlay);
+    document.body.appendChild(card);
+
+    // Hide Original Button
+    btn.style.opacity = '0';
+    btn.style.pointerEvents = 'none';
+
+    // Force reflow
+    void card.offsetWidth;
+
+    // Animate
+    requestAnimationFrame(() => {
+        overlay.style.backgroundColor = 'rgba(0,0,0,0.6)';
+        overlay.style.backdropFilter = 'blur(8px)';
+        overlay.style.webkitBackdropFilter = 'blur(8px)';
+        
+        const targetWidth = Math.min(340, window.innerWidth - 32);
+        const targetHeight = 420;
+        const targetTop = (window.innerHeight - targetHeight) / 2;
+        const targetLeft = (window.innerWidth - targetWidth) / 2;
+
+        Object.assign(card.style, {
+            top: `${targetTop}px`,
+            left: `${targetLeft}px`,
+            width: `${targetWidth}px`,
+            height: `${targetHeight}px`,
+            borderRadius: '28px'
+        });
+        
+        content.style.opacity = '1';
+    });
+
+    overlay.onclick = (e) => {
+        if (e.target === overlay) closeReportMenu();
+    };
+}
+
+function closeReportMenu() {
+    const overlay = document.getElementById('report-menu-overlay');
+    const card = document.getElementById('report-menu-card');
+    const fab = document.querySelector('.floating-pill-btn');
+    
+    if (!overlay || !card) return;
+
+    // Fade out content
+    if (card.children[0]) card.children[0].style.opacity = '0';
+    overlay.style.backgroundColor = 'rgba(0,0,0,0)';
+    overlay.style.backdropFilter = 'blur(0px)';
+    overlay.style.webkitBackdropFilter = 'blur(0px)';
+
+    // Animate back to button
+    if (fab) {
+        const rect = fab.getBoundingClientRect();
+        const computedStyle = window.getComputedStyle(fab);
+        
+        Object.assign(card.style, {
+            top: `${rect.top}px`,
+            left: `${rect.left}px`,
+            width: `${rect.width}px`,
+            height: `${rect.height}px`,
+            borderRadius: computedStyle.borderRadius,
+            transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)', // Smooth ease out
+            opacity: '1' // Keep visible until swapped
+        });
+    } else {
+        card.style.opacity = '0';
+        card.style.transform = 'scale(0.8)';
+    }
+
+    setTimeout(() => {
+        if (overlay) overlay.remove();
+        if (card) card.remove();
+        if (fab) {
+            fab.style.opacity = '';
+            fab.style.pointerEvents = '';
+        }
+    }, 400);
+}
+
+function handleMenuAction(action) {
+    closeReportMenu();
+    setTimeout(() => {
+        showPage('report');
+        switchTab(action);
+    }, 300);
+}
+window.openReportMenu = openReportMenu;
+window.closeReportMenu = closeReportMenu;
+window.handleMenuAction = handleMenuAction;
+
 /* FAB CLICK HANDLER */
 function handleFabClick() {
   const fab = document.querySelector('.floating-pill-btn');
@@ -6019,7 +6194,7 @@ function handleFabClick() {
        const reason = fab.dataset.banReason || 'Violation of Terms';
        showToast(`Banned: ${reason}`, "error");
     } else {
-       showPage('report');
+       openReportMenu(fab);
     }
   }
 }
