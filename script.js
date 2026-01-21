@@ -1568,18 +1568,16 @@ function initSearchUI() {
         }
     });
 
-    // On focus, especially on mobile, scroll to trigger sticky mode
+    // On focus, especially on mobile, expand search box
     input.addEventListener('focus', (e) => {
-        // Mobile: If not sticky yet, scroll first, then focus
-        if (window.innerWidth <= 600 && window.scrollY < 150) {
-            input.blur(); // Dismiss keyboard/focus immediately
-            window.scrollTo({ top: 160, behavior: 'smooth' });
-            
-            // Wait for smooth scroll to complete before activating keyboard
+        // Mobile: If not sticky yet, make it sticky immediately
+        const searchBox = document.querySelector('.search-box');
+        if (window.innerWidth <= 600 && searchBox && !searchBox.classList.contains('sticky-search')) {
+            searchBox.classList.add('sticky-search');
+            // Scroll to ensure it's visible at the top
             setTimeout(() => {
-                input.focus();
-            }, 550);
-            return;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 50);
         }
 
         const val = input.value.trim();
