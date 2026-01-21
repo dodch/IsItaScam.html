@@ -1627,6 +1627,13 @@ function initSearchUI() {
         const searchBox = document.querySelector('.search-box');
         if (searchBox) {
             searchBox.classList.remove('search-expanded');
+            
+            // Fix: Remove sticky class if near top to prevent navbar overlap
+            if (window.scrollY <= 150) {
+                searchBox.classList.remove('sticky-search');
+                const navbar = document.querySelector('.navbar');
+                if (navbar) navbar.classList.remove('hidden');
+            }
         }
     });
 }
@@ -6452,14 +6459,29 @@ window.addEventListener('scroll', () => {
   if (searchBox && homeSection && !homeSection.classList.contains('hidden')) {
     // Keep expanded if user has focused the search (search-expanded class added by focus event)
     if (searchBox.classList.contains('search-expanded')) {
-      searchBox.classList.add('sticky-search');
-      if (navbar) navbar.classList.add('hidden');
+      // On mobile, always hide navbar when search is expanded to prevent overlap
+      if (window.innerWidth <= 600) {
+         if (navbar) navbar.classList.add('hidden');
+      }
+
+      if (window.scrollY > 50) {
+        searchBox.classList.add('sticky-search');
+        if (navbar && window.innerWidth > 600) navbar.classList.add('hidden');
+      } else {
+        searchBox.classList.remove('sticky-search');
+        // Only show navbar if NOT mobile (on mobile, expanded search covers navbar area)
+        if (navbar && window.innerWidth > 600) navbar.classList.remove('hidden');
+      }
       
       // On mobile, if user scrolls while search is expanded, collapse it
       if (window.innerWidth <= 600 && window.scrollY > 50) {
         searchBox.classList.remove('search-expanded');
         searchBox.classList.remove('sticky-search');
         if (navbar) navbar.classList.remove('hidden');
+        
+        // Force blur to ensure keyboard closes and state is clean
+        const input = document.getElementById('search-input');
+        if (input) input.blur();
       }
     } else if (window.scrollY > 150) {
       // Automatic sticky on scroll down
