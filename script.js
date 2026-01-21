@@ -1574,6 +1574,8 @@ function initSearchUI() {
         const searchBox = document.querySelector('.search-box');
         if (window.innerWidth <= 600 && searchBox && !searchBox.classList.contains('sticky-search')) {
             searchBox.classList.add('sticky-search');
+            // Mark search as user-expanded to prevent scroll listener from collapsing it
+            window.isSearchExpanded = true;
             // Scroll to ensure it's visible at the top
             setTimeout(() => {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1624,6 +1626,14 @@ function initSearchUI() {
                 }
             }
             performSearch();
+        }
+    });
+
+    // Reset expanded flag when input loses focus
+    input.addEventListener('blur', () => {
+        // Keep expanded state if on mobile until user scrolls away
+        if (window.innerWidth > 600) {
+            window.isSearchExpanded = false;
         }
     });
 }
@@ -6463,16 +6473,21 @@ window.addEventListener('scroll', () => {
   
   // Sticky Search Logic
   if (searchBox && homeSection && !homeSection.classList.contains('hidden')) {
-    if (window.scrollY > 150) {
+    // Keep search expanded if user explicitly expanded it on mobile
+    const inputActive = document.activeElement === document.getElementById('search-input');
+    if (window.scrollY > 150 || (window.isSearchExpanded && window.innerWidth <= 600)) {
       searchBox.classList.add('sticky-search');
       if (navbar) navbar.classList.add('hidden');
-    } else {
+    } else if (!inputActive) {
+      // Only collapse if input is not focused
       searchBox.classList.remove('sticky-search');
       if (navbar) navbar.classList.remove('hidden');
+      window.isSearchExpanded = false;
     }
   } else {
     if (navbar) navbar.classList.remove('hidden');
     if (searchBox) searchBox.classList.remove('sticky-search');
+    window.isSearchExpanded = false;
   }
 
   // Navbar Scrolled State
