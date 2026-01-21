@@ -1576,10 +1576,6 @@ function initSearchUI() {
             searchBox.classList.add('sticky-search');
             // Mark search as user-expanded to prevent scroll listener from collapsing it
             window.isSearchExpanded = true;
-            // Scroll to ensure it's visible at the top
-            setTimeout(() => {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }, 50);
         }
 
         const val = input.value.trim();
@@ -1636,6 +1632,22 @@ function initSearchUI() {
             window.isSearchExpanded = false;
         }
     });
+
+    // Handle touch start on mobile to expand search before iOS auto-scrolls
+    if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+        input.addEventListener('touchstart', (e) => {
+            const searchBox = document.querySelector('.search-box');
+            if (window.innerWidth <= 600 && searchBox && !searchBox.classList.contains('sticky-search')) {
+                e.preventDefault();
+                searchBox.classList.add('sticky-search');
+                window.isSearchExpanded = true;
+                // Use setTimeout to ensure focus happens after expand
+                setTimeout(() => {
+                    input.focus();
+                }, 100);
+            }
+        }, { passive: false });
+    }
 }
 
 function applySuggestion(url, type) {
@@ -6445,12 +6457,12 @@ window.addEventListener('resize', () => {
   mobileViewportHeight = currentHeight;
 });
 
-// Scroll search box into view when focused on mobile
+// Scroll search box into view when focused on mobile (only if already sticky)
 document.addEventListener('focusin', (e) => {
-  if (e.target.id === 'search-input' && /Android|iPhone|iPad|iPod/.test(navigator.userAgent)) {
+  if (e.target.id === 'search-input' && /Android/.test(navigator.userAgent)) {
     const searchBox = document.querySelector('.search-box');
+    // Only scroll on Android if already sticky (iOS is handled by touchstart)
     if (searchBox && searchBox.classList.contains('sticky-search')) {
-      // Scroll to ensure search is visible with keyboard
       setTimeout(() => {
         const rect = searchBox.getBoundingClientRect();
         if (rect.top < 0 || rect.top > window.innerHeight * 0.5) {
