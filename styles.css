@@ -270,6 +270,28 @@ button {
   transition: max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Mobile search expanded state */
+@media (max-width: 600px) {
+  .search-box.search-expanded {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 95%;
+    max-width: 100%;
+    z-index: 9999;
+    margin-top: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 60px;
+    padding: 6px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,255,255,0.08);
+    animation: slideDown 0.3s ease forwards;
+  }
+}
+
 .search-box.sticky-search {
   position: fixed;
   top: 20px;

@@ -1568,14 +1568,11 @@ function initSearchUI() {
         }
     });
 
-    // On focus, especially on mobile, expand search box
+    // On focus, show recent searches on mobile and add expanded class
     input.addEventListener('focus', (e) => {
-        // Mobile: If not sticky yet, make it sticky immediately
         const searchBox = document.querySelector('.search-box');
-        if (window.innerWidth <= 600 && searchBox && !searchBox.classList.contains('sticky-search')) {
-            searchBox.classList.add('sticky-search');
-            // Mark search as user-expanded to prevent scroll listener from collapsing it
-            window.isSearchExpanded = true;
+        if (searchBox) {
+            searchBox.classList.add('search-expanded');
         }
 
         const val = input.value.trim();
@@ -1625,29 +1622,13 @@ function initSearchUI() {
         }
     });
 
-    // Reset expanded flag when input loses focus
+    // Remove expanded class on blur
     input.addEventListener('blur', () => {
-        // Keep expanded state if on mobile until user scrolls away
-        if (window.innerWidth > 600) {
-            window.isSearchExpanded = false;
+        const searchBox = document.querySelector('.search-box');
+        if (searchBox) {
+            searchBox.classList.remove('search-expanded');
         }
     });
-
-    // Handle touch start on mobile to expand search before iOS auto-scrolls
-    if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-        input.addEventListener('touchstart', (e) => {
-            const searchBox = document.querySelector('.search-box');
-            if (window.innerWidth <= 600 && searchBox && !searchBox.classList.contains('sticky-search')) {
-                e.preventDefault();
-                searchBox.classList.add('sticky-search');
-                window.isSearchExpanded = true;
-                // Use setTimeout to ensure focus happens after expand
-                setTimeout(() => {
-                    input.focus();
-                }, 100);
-            }
-        }, { passive: false });
-    }
 }
 
 function applySuggestion(url, type) {
@@ -6457,22 +6438,6 @@ window.addEventListener('resize', () => {
   mobileViewportHeight = currentHeight;
 });
 
-// Scroll search box into view when focused on mobile (only if already sticky)
-document.addEventListener('focusin', (e) => {
-  if (e.target.id === 'search-input' && /Android/.test(navigator.userAgent)) {
-    const searchBox = document.querySelector('.search-box');
-    // Only scroll on Android if already sticky (iOS is handled by touchstart)
-    if (searchBox && searchBox.classList.contains('sticky-search')) {
-      setTimeout(() => {
-        const rect = searchBox.getBoundingClientRect();
-        if (rect.top < 0 || rect.top > window.innerHeight * 0.5) {
-          searchBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 100);
-    }
-  }
-});
-
 /* SCROLL LISTENER FOR STICKY SEARCH & MENU CLOSE */
 window.addEventListener('scroll', () => {
   closeMenu();
@@ -6485,21 +6450,23 @@ window.addEventListener('scroll', () => {
   
   // Sticky Search Logic
   if (searchBox && homeSection && !homeSection.classList.contains('hidden')) {
-    // Keep search expanded if user explicitly expanded it on mobile
-    const inputActive = document.activeElement === document.getElementById('search-input');
-    if (window.scrollY > 150 || (window.isSearchExpanded && window.innerWidth <= 600)) {
+    // Keep expanded if user has focused the search (search-expanded class added by focus event)
+    if (searchBox.classList.contains('search-expanded')) {
+      // User has expanded it, keep it sticky
       searchBox.classList.add('sticky-search');
       if (navbar) navbar.classList.add('hidden');
-    } else if (!inputActive) {
-      // Only collapse if input is not focused
+    } else if (window.scrollY > 150) {
+      // Automatic sticky on scroll down
+      searchBox.classList.add('sticky-search');
+      if (navbar) navbar.classList.add('hidden');
+    } else {
+      // Collapse when scrolled back up
       searchBox.classList.remove('sticky-search');
       if (navbar) navbar.classList.remove('hidden');
-      window.isSearchExpanded = false;
     }
   } else {
     if (navbar) navbar.classList.remove('hidden');
     if (searchBox) searchBox.classList.remove('sticky-search');
-    window.isSearchExpanded = false;
   }
 
   // Navbar Scrolled State
