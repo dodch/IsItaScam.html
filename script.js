@@ -1149,10 +1149,24 @@ function switchAdminTab(tab) {
         abuseSection.classList.remove('hidden');
         if (abuseBtn) abuseBtn.classList.add('active');
         if (subtitle) subtitle.innerText = "Review and resolve abuse reports.";
-        
+
         abuseSection.classList.remove('animate-slide-left', 'animate-slide-right');
         void abuseSection.offsetWidth;
         abuseSection.classList.add('animate-slide-right');
+    }
+  }
+  else if (tab === 'recently_deleted') {
+    const recentlyDeletedSection = document.getElementById('admin-recently-deleted-section');
+    const recentlyDeletedBtn = document.getElementById('admin-recently-deleted-tab-btn');
+
+    if (recentlyDeletedSection) {
+        recentlyDeletedSection.classList.remove('hidden');
+        if (recentlyDeletedBtn) recentlyDeletedBtn.classList.add('active');
+        if (subtitle) subtitle.innerText = "View and manage recently deleted profiles.";
+
+        recentlyDeletedSection.classList.remove('animate-slide-left', 'animate-slide-right');
+        void recentlyDeletedSection.offsetWidth;
+        recentlyDeletedSection.classList.add('animate-slide-right');
     }
   }
   requestAnimationFrame(updateTabIndicator);
@@ -1509,9 +1523,24 @@ function initSearchUI() {
     // Input Listener
     input.addEventListener('input', async (e) => {
         const val = e.target.value.trim();
+
+        // Check if search is expanded on mobile and expansion might still be in progress
+        const searchBox = document.querySelector('.search-box');
+        const isMobileAndExpanded = window.innerWidth <= 600 && searchBox && searchBox.classList.contains('search-expanded');
+
         if (val.length < 2) {
-            if (val.length === 0) renderRecent();
-            else suggestions.classList.add('hidden');
+            if (val.length === 0) {
+                // Only render recent if expansion is complete (wait a bit on mobile)
+                if (isMobileAndExpanded) {
+                    setTimeout(() => {
+                        renderRecent();
+                    }, 300);
+                } else {
+                    renderRecent();
+                }
+            } else {
+                suggestions.classList.add('hidden');
+            }
             return;
         }
 
@@ -1521,62 +1550,189 @@ function initSearchUI() {
         }
 
         const matches = SearchSystem.getSuggestions(val);
-        if (matches.length > 0) {
-            suggestions.innerHTML = matches.map(m => {
-                const icon = m.type === 'report' 
-                    ? `<svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M15.73 3H8.27L3 8.27v7.46L8.27 21h7.46L21 15.73V8.27L15.73 3zM12 17.3c-.72 0-1.3-.58-1.3-1.3 0-.72.58-1.3 1.3-1.3.72 0 1.3.58 1.3 1.3 0 .72-.58 1.3-1.3 1.3zm1-4.3h-2V7h2v6z"/></svg>`
-                    : `<svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`;
-                const iconClass = m.type === 'report' ? 'report-icon' : 'rating-icon';
-                const display = m.data.displayName || m.data.realName || extractUsername(m.url);
-                return `
-                    <div class="suggestion-item" onclick="applySuggestion('${escapeHTML(m.url)}', '${m.type}')">
-                        <span class="s-icon ${iconClass}" style="display:flex; align-items:center; justify-content:center;">${icon}</span>
-                        <div class="s-info">
-                            <div class="s-name">${escapeHTML(display)}</div>
-                            <div class="s-url" style="word-break: break-all;">${escapeHTML(m.url)}</div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            positionSuggestions();
-            suggestions.classList.remove('hidden');
+
+        // On mobile, if search is expanded, wait for expansion to complete
+        if (isMobileAndExpanded) {
+            setTimeout(() => {
+                if (matches.length > 0) {
+                    suggestions.innerHTML = matches.map(m => {
+                        const icon = m.type === 'report'
+                            ? `<svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M15.73 3H8.27L3 8.27v7.46L8.27 21h7.46L21 15.73V8.27L15.73 3zM12 17.3c-.72 0-1.3-.58-1.3-1.3 0-.72.58-1.3 1.3-1.3.72 0 1.3.58 1.3 1.3 0 .72-.58 1.3-1.3 1.3zm1-4.3h-2V7h2v6z"/></svg>`
+                            : `<svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`;
+                        const iconClass = m.type === 'report' ? 'report-icon' : 'rating-icon';
+                        const display = m.data.displayName || m.data.realName || extractUsername(m.url);
+                        return `
+                            <div class="suggestion-item" onclick="applySuggestion('${escapeHTML(m.url)}', '${m.type}')">
+                                <span class="s-icon ${iconClass}" style="display:flex; align-items:center; justify-content:center;">${icon}</span>
+                                <div class="s-info">
+                                    <div class="s-name">${escapeHTML(display)}</div>
+                                    <div class="s-url" style="word-break: break-all;">${escapeHTML(m.url)}</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                    positionSuggestions();
+                    suggestions.classList.remove('hidden');
+                } else {
+                    const fuzzy = SearchSystem.getDidYouMean(val);
+                    if (fuzzy) {
+                        const display = fuzzy.data.displayName || fuzzy.data.realName || extractUsername(fuzzy.url);
+                        suggestions.innerHTML = `
+                            <div class="suggestion-item no-results" style="border-bottom:1px solid #30363d; color:#8b949e;">No exact matches found.</div>
+                            <div class="suggestion-item" onclick="applySuggestion('${escapeHTML(fuzzy.url)}', '${fuzzy.type}')">
+                                <span class="s-icon" style="display:flex; align-items:center; justify-content:center;">
+                                    <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:#8b5cf6;"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7zm2.85 11.1l-.85.6V16h-4v-2.3l-.85-.6C7.8 12.16 7 10.63 7 9c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.63-.8 3.16-2.15 4.1z"/></svg>
+                                </span>
+                                <div class="s-info">
+                                    <div class="s-name" style="color:#c9d1d9;">Did you mean: <strong style="color:#8b5cf6;">${escapeHTML(display)}</strong>?</div>
+                                </div>
+                            </div>
+                        `;
+                        positionSuggestions();
+                        suggestions.classList.remove('hidden');
+                    } else
+                    if (val.length >= 2) {
+                        suggestions.innerHTML = `<div class="suggestion-item no-results">No matches found for "${escapeHTML(val)}"</div>`;
+                        positionSuggestions();
+                        suggestions.classList.remove('hidden');
+                    } else {
+                        suggestions.classList.add('hidden');
+                    }
+                }
+            }, 300); // Wait for expansion animation to complete
         } else {
-            const fuzzy = SearchSystem.getDidYouMean(val);
-            if (fuzzy) {
-                const display = fuzzy.data.displayName || fuzzy.data.realName || extractUsername(fuzzy.url);
-                suggestions.innerHTML = `
-                    <div class="suggestion-item no-results" style="border-bottom:1px solid #30363d; color:#8b949e;">No exact matches found.</div>
-                    <div class="suggestion-item" onclick="applySuggestion('${escapeHTML(fuzzy.url)}', '${fuzzy.type}')">
-                        <span class="s-icon" style="display:flex; align-items:center; justify-content:center;">
-                            <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:#8b5cf6;"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7zm2.85 11.1l-.85.6V16h-4v-2.3l-.85-.6C7.8 12.16 7 10.63 7 9c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.63-.8 3.16-2.15 4.1z"/></svg>
-                        </span>
-                        <div class="s-info">
-                            <div class="s-name" style="color:#c9d1d9;">Did you mean: <strong style="color:#8b5cf6;">${escapeHTML(display)}</strong>?</div>
+            // On desktop or when not expanded, show immediately
+            if (matches.length > 0) {
+                suggestions.innerHTML = matches.map(m => {
+                    const icon = m.type === 'report'
+                        ? `<svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M15.73 3H8.27L3 8.27v7.46L8.27 21h7.46L21 15.73V8.27L15.73 3zM12 17.3c-.72 0-1.3-.58-1.3-1.3 0-.72.58-1.3 1.3-1.3.72 0 1.3.58 1.3 1.3 0 .72-.58 1.3-1.3 1.3zm1-4.3h-2V7h2v6z"/></svg>`
+                        : `<svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`;
+                    const iconClass = m.type === 'report' ? 'report-icon' : 'rating-icon';
+                    const display = m.data.displayName || m.data.realName || extractUsername(m.url);
+                    return `
+                        <div class="suggestion-item" onclick="applySuggestion('${escapeHTML(m.url)}', '${m.type}')">
+                            <span class="s-icon ${iconClass}" style="display:flex; align-items:center; justify-content:center;">${icon}</span>
+                            <div class="s-info">
+                                <div class="s-name">${escapeHTML(display)}</div>
+                                <div class="s-url" style="word-break: break-all;">${escapeHTML(m.url)}</div>
+                            </div>
                         </div>
-                    </div>
-                `;
-                positionSuggestions();
-                suggestions.classList.remove('hidden');
-            } else 
-            if (val.length >= 2) {
-                suggestions.innerHTML = `<div class="suggestion-item no-results">No matches found for "${escapeHTML(val)}"</div>`;
+                    `;
+                }).join('');
                 positionSuggestions();
                 suggestions.classList.remove('hidden');
             } else {
-                suggestions.classList.add('hidden');
+                const fuzzy = SearchSystem.getDidYouMean(val);
+                if (fuzzy) {
+                    const display = fuzzy.data.displayName || fuzzy.data.realName || extractUsername(fuzzy.url);
+                    suggestions.innerHTML = `
+                        <div class="suggestion-item no-results" style="border-bottom:1px solid #30363d; color:#8b949e;">No exact matches found.</div>
+                        <div class="suggestion-item" onclick="applySuggestion('${escapeHTML(fuzzy.url)}', '${fuzzy.type}')">
+                            <span class="s-icon" style="display:flex; align-items:center; justify-content:center;">
+                                <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:#8b5cf6;"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7zm2.85 11.1l-.85.6V16h-4v-2.3l-.85-.6C7.8 12.16 7 10.63 7 9c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.63-.8 3.16-2.15 4.1z"/></svg>
+                            </span>
+                            <div class="s-info">
+                                <div class="s-name" style="color:#c9d1d9;">Did you mean: <strong style="color:#8b5cf6;">${escapeHTML(display)}</strong>?</div>
+                            </div>
+                        </div>
+                    `;
+                    positionSuggestions();
+                    suggestions.classList.remove('hidden');
+                } else
+                if (val.length >= 2) {
+                    suggestions.innerHTML = `<div class="suggestion-item no-results">No matches found for "${escapeHTML(val)}"</div>`;
+                    positionSuggestions();
+                    suggestions.classList.remove('hidden');
+                } else {
+                    suggestions.classList.add('hidden');
+                }
             }
         }
     });
 
-    // On focus, show recent searches on mobile and add expanded class
-    input.addEventListener('focus', (e) => {
-        const searchBox = document.querySelector('.search-box');
-        if (searchBox) {
-            searchBox.classList.add('search-expanded');
-        }
+    // Handle touchstart for immediate keyboard and expansion on mobile
+    input.addEventListener('touchstart', (e) => {
+        if (window.innerWidth <= 600) {
+            const searchBox = document.querySelector('.search-box');
+            if (searchBox) {
+                // Expand search immediately
+                searchBox.classList.add('search-expanded');
 
+                // Hide navbar immediately on mobile
+                const navbar = document.querySelector('.navbar');
+                if (navbar) {
+                    navbar.classList.add('hidden');
+                }
+
+                // Hide suggestions immediately to prevent overlay on mobile
+                const suggestions = document.getElementById('search-suggestions');
+                if (suggestions) {
+                    suggestions.classList.add('hidden');
+                }
+            }
+
+            // Focus the input immediately to bring up keyboard
+            input.focus();
+        }
+    });
+
+    // Also handle mousedown for immediate response on all devices
+    input.addEventListener('mousedown', (e) => {
+        if (window.innerWidth <= 600) {
+            const searchBox = document.querySelector('.search-box');
+            if (searchBox) {
+                // Expand search immediately
+                searchBox.classList.add('search-expanded');
+
+                // Hide navbar immediately on mobile
+                const navbar = document.querySelector('.navbar');
+                if (navbar) {
+                    navbar.classList.add('hidden');
+                }
+
+                // Hide suggestions immediately to prevent overlay on mobile
+                const suggestions = document.getElementById('search-suggestions');
+                if (suggestions) {
+                    suggestions.classList.add('hidden');
+                }
+            }
+
+            // Focus the input immediately to bring up keyboard
+            input.focus();
+        }
+    });
+
+    // On focus, handle expansion and show recent searches after expansion finishes
+    input.addEventListener('focus', (e) => {
         const val = input.value.trim();
-        if (val.length === 0) renderRecent();
+
+        if (window.innerWidth <= 600) {
+            const searchBox = document.querySelector('.search-box');
+            if (searchBox) {
+                // Ensure search is expanded when focused
+                searchBox.classList.add('search-expanded');
+
+                // Hide navbar when search is expanded
+                const navbar = document.querySelector('.navbar');
+                if (navbar) {
+                    navbar.classList.add('hidden');
+                }
+
+                // Wait for expansion to finish before showing suggestions
+                setTimeout(() => {
+                    if (val.length === 0) {
+                        renderRecent();
+                    } else if (val.length >= 2) {
+                        // Trigger input event to show suggestions after expansion
+                        const event = new Event('input', { bubbles: true });
+                        input.dispatchEvent(event);
+                    }
+                }, 300); // Wait for expansion animation (300ms matches CSS transition)
+            }
+        } else {
+            // On desktop, show immediately
+            if (val.length === 0) renderRecent();
+        }
     });
 
     // Hide keyboard on user scroll
@@ -1598,20 +1754,31 @@ function initSearchUI() {
     document.addEventListener('click', (e) => {
         if (!input.contains(e.target) && !suggestions.contains(e.target)) {
             suggestions.classList.add('hidden');
+
+            // Also remove expanded class if clicked outside search box on mobile
+            const searchBox = document.querySelector('.search-box');
+            const isMobile = window.innerWidth <= 600;
+            if (searchBox && isMobile && searchBox.classList.contains('search-expanded')) {
+                searchBox.classList.remove('search-expanded');
+
+                // Show navbar when search is no longer expanded
+                const navbar = document.querySelector('.navbar');
+                if (navbar) navbar.classList.remove('hidden');
+            }
         }
     });
-    
+
     // Hide on Enter
     input.addEventListener('keydown', async (e) => {
         if (e.key === 'Enter') {
             suggestions.classList.add('hidden');
             const val = input.value.trim();
-            
+
             if (val) {
                 if (searchIndexReadyPromise) await searchIndexReadyPromise;
-                
+
                 const counts = SearchSystem.getCounts(val);
-                
+
                 if (counts.reports > 0 && counts.ratings === 0) {
                     switchHomeTab('reports');
                 } else if (counts.ratings > 0 && counts.reports === 0) {
@@ -1622,18 +1789,21 @@ function initSearchUI() {
         }
     });
 
-    // Remove expanded class on blur
+    // Remove expanded class on blur and hide suggestions
     input.addEventListener('blur', () => {
         const searchBox = document.querySelector('.search-box');
         if (searchBox) {
             searchBox.classList.remove('search-expanded');
-            
+
             // Fix: Remove sticky class if near top to prevent navbar overlap
             if (window.scrollY <= 150) {
                 searchBox.classList.remove('sticky-search');
                 const navbar = document.querySelector('.navbar');
                 if (navbar) navbar.classList.remove('hidden');
             }
+
+            // Hide suggestions when search loses focus
+            suggestions.classList.add('hidden');
         }
     });
 }
@@ -3114,6 +3284,10 @@ async function populateDetailsView(url, type, highlightId = null) {
                 <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
                 Scam
             </button>
+             <button onclick="deleteSellerProfile('${escapeHTML(url)}', '${escapeHTML(enrichedName || username)}')" style="background:rgba(255, 77, 77, 0.2); border:1px solid #ff4d4d; color:#ff4d4d; padding:8px 16px; border-radius:12px; font-size:0.85rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s; flex: 1; justify-content: center; min-width: 100px; max-width: 120px;" title="Admin: Delete entire profile">
+                <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                Delete
+            </button>
             ` : ''}
         </div>
       </div>
@@ -4104,6 +4278,36 @@ function initAdminBlacklistUI() {
     }
 }
 
+function initAdminRecentlyDeletedUI() {
+    // Inject Tab Button
+    const blacklistBtn = document.getElementById('admin-blacklist-tab-btn');
+    if (blacklistBtn && blacklistBtn.parentNode && !document.getElementById('admin-recently-deleted-tab-btn')) {
+        const btn = document.createElement('button');
+        btn.id = 'admin-recently-deleted-tab-btn';
+        btn.className = 'home-tab-btn';
+        btn.onclick = () => switchAdminTab('recently_deleted');
+        btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M13.49 5.48c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm-3.6 13.9l1-4.4 2.1 2v6h2v-7.5l-2.1-2 .6-3c1.3 1.5 3.3 2.5 5.5 2.5v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1l-5.2 2.2v4.7h2v-3.4l1.8-.7-1.6 8.1-4.9-1-.4 2 7 1.4z"/></svg> Recently Deleted`;
+        blacklistBtn.parentNode.appendChild(btn);
+    }
+
+    // Inject Section
+    const blacklistSection = document.getElementById('admin-blacklist-section');
+    if (blacklistSection && blacklistSection.parentNode && !document.getElementById('admin-recently-deleted-section')) {
+        const section = document.createElement('div');
+        section.id = 'admin-recently-deleted-section';
+        section.className = 'hidden';
+        section.innerHTML = `
+            <div class="card" style="margin-bottom:20px; border-color:#ffaa00;">
+                <h3 style="margin-top:0; color:#ffaa00;">Recently Deleted Profiles</h3>
+                <p style="font-size:0.9em; color:#8b949e;">Profiles deleted in the last 30 days that can be restored.</p>
+            </div>
+            <div id="admin-recently-deleted-list" class="report-grid"></div>
+            <button onclick="showRecentlyDeleted()" class="visit-btn" style="width:100%; margin-top:20px; background:rgba(255, 170, 0, 0.1); border:1px solid rgba(255, 170, 0, 0.3); color:#ffaa00;">View All Recently Deleted</button>
+        `;
+        blacklistSection.parentNode.appendChild(section);
+    }
+}
+
 /* ADMIN: ABUSE REPORTS LOGIC */
 async function resolveAbuseReport(reportId, action, targetCollection, targetId, reportedUid) {
     if (!auth.currentUser) return;
@@ -4300,10 +4504,11 @@ async function renderAdminDashboard() {
     const container = document.getElementById('admin-user-list');
     const banContainer = document.getElementById('admin-banned-list');
     if (!container || !banContainer) return;
-    
+
     initAdminBanControls();
     initAdminBlacklistUI();
     initAdminAbuseUI();
+    initAdminRecentlyDeletedUI();
     
     container.innerHTML = getSkeletonHTML(3);
     banContainer.innerHTML = getSkeletonHTML(3);
@@ -6421,94 +6626,184 @@ function getSkeletonHTML(count) {
   }
   return html;
 }
-/* MOBILE KEYBOARD HANDLING FOR SEARCH BOX */
-let mobileViewportHeight = window.innerHeight;
 
+
+/* ==========================================
+   MOBILE SEARCH BEHAVIOR FIX
+   ========================================== */
+// Track mobile keyboard state
+let mobileViewportHeight = window.innerHeight;
+let isMobileKeyboardVisible = false;
+let keyboardCheckTimer = null;
+
+// Handle mobile keyboard appearance/disappearance with debounce
 window.addEventListener('resize', () => {
-  const currentHeight = window.innerHeight;
-  const searchBoxFixed = document.querySelector('.search-box.sticky-search');
-  
-  // Keyboard appeared (height decreased significantly on mobile)
-  if (currentHeight < mobileViewportHeight * 0.75 && /Android|iPhone|iPad|iPod/.test(navigator.userAgent)) {
-    if (searchBoxFixed) {
-      searchBoxFixed.style.position = 'absolute';
-      searchBoxFixed.style.top = (window.scrollY + 8) + 'px';
-    }
-  } 
-  // Keyboard hidden
-  else if (currentHeight >= mobileViewportHeight * 0.75) {
-    if (searchBoxFixed) {
-      searchBoxFixed.style.position = 'fixed';
-      searchBoxFixed.style.top = '20px';
-    }
+  // Clear any existing timer to debounce the resize event
+  if (keyboardCheckTimer) {
+    clearTimeout(keyboardCheckTimer);
   }
-  mobileViewportHeight = currentHeight;
+
+  keyboardCheckTimer = setTimeout(() => {
+    const currentHeight = window.innerHeight;
+    const isMobile = /Android|iPhone|iPad|iPod/.test(navigator.userAgent);
+
+    if (isMobile) {
+      const heightDiff = Math.abs(mobileViewportHeight - currentHeight);
+      const keyboardThreshold = Math.max(150, mobileViewportHeight * 0.25);
+
+      if (heightDiff > keyboardThreshold && !isMobileKeyboardVisible) {
+        // Keyboard appeared
+        isMobileKeyboardVisible = true;
+        mobileViewportHeight = currentHeight;
+
+        // When keyboard appears and search is expanded, adjust position
+        const searchBox = document.querySelector('.search-box');
+        if (searchBox && searchBox.classList.contains('search-expanded')) {
+          searchBox.style.position = 'absolute';
+          searchBox.style.top = window.scrollY + 'px';
+        }
+      } else if (heightDiff > keyboardThreshold && isMobileKeyboardVisible) {
+        // Keyboard height changed but still visible
+        mobileViewportHeight = currentHeight;
+      } else if (heightDiff <= keyboardThreshold && isMobileKeyboardVisible) {
+        // Keyboard disappeared
+        isMobileKeyboardVisible = false;
+        mobileViewportHeight = currentHeight;
+
+        // When keyboard hides, restore proper position based on scroll and expansion state
+        const searchBox = document.querySelector('.search-box');
+        if (searchBox) {
+          // Check if search was expanded before keyboard hid
+          if (searchBox.classList.contains('search-expanded')) {
+            // If search was expanded, keep it visible but adjust position
+            searchBox.style.position = 'fixed';
+            searchBox.style.top = '20px';
+            // Don't add sticky-search class if we're at the top to prevent it from going back to hero
+            if (window.scrollY > 50) {
+              searchBox.classList.add('sticky-search');
+            } else {
+              searchBox.classList.remove('sticky-search');
+            }
+          } else {
+            if (window.scrollY > 100) {
+              // If scrolled down, make it sticky
+              searchBox.style.position = 'fixed';
+              searchBox.style.top = '20px';
+              searchBox.classList.add('sticky-search');
+            } else {
+              // If at top, restore to normal position
+              searchBox.style.position = 'relative';
+              searchBox.style.top = 'auto';
+              searchBox.classList.remove('sticky-search');
+            }
+          }
+
+          // Also ensure navbar is properly displayed
+          const navbar = document.querySelector('.navbar');
+          if (navbar && window.scrollY <= 50 && !searchBox.classList.contains('search-expanded')) {
+            navbar.classList.remove('hidden');
+          }
+        }
+      } else {
+        // Just general resize, update reference
+        mobileViewportHeight = currentHeight;
+      }
+    } else {
+      mobileViewportHeight = currentHeight;
+    }
+  }, 100); // Debounce resize events
 });
 
-/* SCROLL LISTENER FOR STICKY SEARCH & MENU CLOSE */
+// Simplified scroll handler for search box
+let lastScrollTop = 0;
+let scrollTimer = null;
+
 window.addEventListener('scroll', () => {
+  // Close menu on scroll
   closeMenu();
 
   const searchBox = document.querySelector('.search-box');
   const navbar = document.querySelector('.navbar');
   const homeSection = document.getElementById('home');
-  const fab = document.querySelector('.floating-pill-btn');
-  const reportSection = document.getElementById('report');
-  
-  // Sticky Search Logic
-  if (searchBox && homeSection && !homeSection.classList.contains('hidden')) {
-    // Keep expanded if user has focused the search (search-expanded class added by focus event)
-    if (searchBox.classList.contains('search-expanded')) {
-      // On mobile, always hide navbar when search is expanded to prevent overlap
-      if (window.innerWidth <= 600) {
-         if (navbar) navbar.classList.add('hidden');
-      }
 
-      if (window.scrollY > 50) {
-        searchBox.classList.add('sticky-search');
-        if (navbar && window.innerWidth > 600) navbar.classList.add('hidden');
-      } else {
-        searchBox.classList.remove('sticky-search');
-        // Only show navbar if NOT mobile (on mobile, expanded search covers navbar area)
-        if (navbar && window.innerWidth > 600) navbar.classList.remove('hidden');
-      }
-      
-      // On mobile, if user scrolls while search is expanded, collapse it
-      if (window.innerWidth <= 600 && window.scrollY > 50) {
-        searchBox.classList.remove('search-expanded');
-        searchBox.classList.remove('sticky-search');
-        if (navbar) navbar.classList.remove('hidden');
-        
-        // Force blur to ensure keyboard closes and state is clean
-        const input = document.getElementById('search-input');
-        if (input) input.blur();
-      }
-    } else if (window.scrollY > 150) {
-      // Automatic sticky on scroll down
-      searchBox.classList.add('sticky-search');
-      if (navbar) navbar.classList.add('hidden');
-    } else {
-      // Collapse when scrolled back up
-      searchBox.classList.remove('sticky-search');
-      if (navbar) navbar.classList.remove('hidden');
-    }
-  } else {
+  // Only handle search box behavior on home page
+  if (!searchBox || !homeSection || homeSection.classList.contains('hidden')) {
     if (navbar) navbar.classList.remove('hidden');
     if (searchBox) searchBox.classList.remove('sticky-search');
+    return;
   }
 
-  // Navbar Scrolled State
-  if (navbar) {
-    navbar.classList.toggle('scrolled', window.scrollY > 20);
+  const currentScrollTop = window.pageYOffset || document.documentElement.scrollTop;
+  const isMobile = window.innerWidth <= 600;
+
+  // Clear any existing timer
+  if (scrollTimer) {
+    clearTimeout(scrollTimer);
   }
 
-  // FAB Scroll Logic (Zoom out when scrolling down, Zoom in at top)
+  // Determine scroll direction
+  const scrollDown = currentScrollTop > lastScrollTop;
+
+  // Only collapse search if we're truly at the hero section (very top)
+  if (currentScrollTop <= 5) {
+    // At the very top of the page - allow search to collapse
+    if (searchBox.classList.contains('search-expanded')) {
+      searchBox.classList.remove('search-expanded');
+      if (navbar) navbar.classList.remove('hidden');
+    }
+    // At top - remove sticky
+    searchBox.classList.remove('sticky-search');
+  } else {
+    // Not at the top - prevent search from collapsing
+    if (searchBox.classList.contains('search-expanded')) {
+      // Keep search expanded when not at top
+      searchBox.classList.remove('sticky-search');
+
+      if (isMobile && navbar) {
+        navbar.classList.add('hidden');
+      }
+      // Always hide suggestions when search is expanded
+      const suggestions = document.getElementById('search-suggestions');
+      if (suggestions) {
+        suggestions.classList.add('hidden');
+      }
+    } else {
+      // Apply sticky behavior based on scroll direction and position when not expanded
+      if (scrollDown && currentScrollTop > 100 && !isMobileKeyboardVisible) {
+        // Scrolling down and past threshold - make sticky
+        searchBox.classList.add('sticky-search');
+        if (navbar) navbar.classList.add('hidden');
+      } else if (!scrollDown && currentScrollTop > 50) {
+        // Scrolling up but not at the top - make sticky
+        searchBox.classList.add('sticky-search');
+        if (navbar) navbar.classList.add('hidden');
+      } else if (currentScrollTop <= 50) {
+        // Near top but not at the very top - remove sticky but don't collapse search
+        searchBox.classList.remove('sticky-search');
+      }
+    }
+  }
+
+  // Set a timer to ensure cleanup when scrolling stops
+  scrollTimer = setTimeout(() => {
+    if (window.scrollY <= 50) {
+      const searchBox = document.querySelector('.search-box');
+      const navbar = document.querySelector('.navbar');
+      if (searchBox) searchBox.classList.remove('sticky-search');
+      if (navbar) navbar.classList.remove('hidden');
+    }
+  }, 150);
+
+  lastScrollTop = currentScrollTop <= 0 ? 0 : currentScrollTop; // For Mobile or negative scrolling
+
+  // Handle other scroll behaviors
+  const fab = document.querySelector('.floating-pill-btn');
   const isHomePage = homeSection && !homeSection.classList.contains('hidden');
 
   if (fab) {
     if (isHomePage) {
       fab.classList.remove('hidden-fab');
-      if (window.scrollY > 300) {
+      if (currentScrollTop > 300) {
         fab.classList.add('back-to-top-mode');
       } else {
         fab.classList.remove('back-to-top-mode');
@@ -6519,17 +6814,38 @@ window.addEventListener('scroll', () => {
     }
   }
 
-  // Back Button Logic (Sticky & Rotate)
   const activeSection = document.querySelector('section:not(.hidden)');
   if (activeSection && activeSection.id !== 'home') {
       const backBtn = activeSection.querySelector('.back-btn');
       if (backBtn) {
-          if (window.scrollY > 20) {
+          if (currentScrollTop > 20) {
               backBtn.classList.add('sticky-back', 'rotate-up');
           } else {
               backBtn.classList.remove('sticky-back', 'rotate-up');
           }
       }
+  }
+
+  // Update the search box position if keyboard is visible to prevent layout shifts
+  if (isMobileKeyboardVisible && searchBox && searchBox.classList.contains('search-expanded')) {
+    // Only change to absolute position if we're not already at the top
+    if (currentScrollTop > 10) {
+      searchBox.style.position = 'absolute';
+      searchBox.style.top = window.scrollY + 'px';
+    }
+  } else if (searchBox && searchBox.style.position === 'absolute' && !isMobileKeyboardVisible) {
+    // Restore proper position when keyboard is hidden
+    if (currentScrollTop > 100) {
+      // If scrolled down, make it sticky
+      searchBox.style.position = 'fixed';
+      searchBox.style.top = '20px';
+      searchBox.classList.add('sticky-search');
+    } else {
+      // If at top, restore to normal position but keep it visible
+      searchBox.style.position = 'fixed';
+      searchBox.style.top = '20px';
+      searchBox.classList.remove('sticky-search');
+    }
   }
 });
 
@@ -6579,10 +6895,10 @@ window.showToast = showToast;
 /* ==========================================
    CUSTOM CONFIRM MODAL
    ========================================== */
-function showConfirm(message, title = "Confirm Action", isDanger = false) {
+function showConfirm(message, title = "Confirm Action", isDanger = false, requireTextInput = false, expectedText = "") {
   return new Promise((resolve) => {
     let overlay = document.getElementById('custom-confirm-modal');
-    
+
     if (!overlay) {
       overlay = document.createElement('div');
       overlay.id = 'custom-confirm-modal';
@@ -6591,6 +6907,10 @@ function showConfirm(message, title = "Confirm Action", isDanger = false) {
         <div class="custom-modal">
           <div class="modal-title" id="modal-title"></div>
           <div class="modal-message" id="modal-message"></div>
+          <div id="confirm-input-container" class="confirm-input-container" style="display:none; margin:15px 0;">
+            <input type="text" id="confirm-input" placeholder="Type as requested..." style="width:100%; padding:10px; margin:10px 0; background:#0d1117; border:1px solid #30363d; color:#eaeaea; border-radius:6px; outline:none;">
+            <div id="confirm-input-error" style="color:#ff4d4d; font-size:0.85em; margin-top:5px; display:none;">Incorrect input</div>
+          </div>
           <div class="modal-actions">
             <button class="modal-btn btn-cancel" id="modal-cancel">Cancel</button>
             <button class="modal-btn btn-confirm" id="modal-confirm">Confirm</button>
@@ -6602,24 +6922,66 @@ function showConfirm(message, title = "Confirm Action", isDanger = false) {
 
     const titleEl = document.getElementById('modal-title');
     const msgEl = document.getElementById('modal-message');
+    const inputContainer = document.getElementById('confirm-input-container');
+    const inputField = document.getElementById('confirm-input');
+    const errorDiv = document.getElementById('confirm-input-error');
     const confirmBtn = document.getElementById('modal-confirm');
     const cancelBtn = document.getElementById('modal-cancel');
 
     titleEl.textContent = title;
     msgEl.innerHTML = message;
-    
+
+    // Handle text input requirement
+    if (requireTextInput) {
+      inputContainer.style.display = 'block';
+      inputField.value = '';
+      errorDiv.style.display = 'none';
+
+      // Focus the input field after a short delay to ensure it's visible
+      setTimeout(() => {
+        if (inputField) inputField.focus();
+      }, 100);
+
+      // Add event listener for input changes
+      inputField.oninput = () => {
+        errorDiv.style.display = 'none';
+      };
+    } else {
+      inputContainer.style.display = 'none';
+    }
+
     confirmBtn.className = isDanger ? 'modal-btn btn-confirm danger' : 'modal-btn btn-confirm';
 
     const close = (result) => {
       overlay.classList.remove('active');
       confirmBtn.onclick = null;
       cancelBtn.onclick = null;
+      inputField.oninput = null;
       resolve(result);
     };
 
-    confirmBtn.onclick = () => close(true);
+    confirmBtn.onclick = () => {
+      if (requireTextInput) {
+        const inputValue = inputField.value.trim();
+        if (inputValue.toLowerCase() === expectedText.toLowerCase()) {
+          close(true);
+        } else {
+          errorDiv.style.display = 'block';
+          inputField.style.borderColor = '#ff4d4d';
+          // Shake animation for wrong input
+          inputField.classList.add('shake');
+          setTimeout(() => {
+            inputField.classList.remove('shake');
+            inputField.focus();
+          }, 500);
+        }
+      } else {
+        close(true);
+      }
+    };
+
     cancelBtn.onclick = () => close(false);
-    
+
     requestAnimationFrame(() => overlay.classList.add('active'));
   });
 }
@@ -6846,23 +7208,28 @@ async function openAdminAddSellerModal() {
     <div id="admin-add-seller-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:10000; overflow-y:auto;">
       <div style="background:#161b22; border:1px solid #30363d; border-radius:16px; padding:24px; max-width:500px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.6); margin:20px auto;">
         <h2 style="margin:0 0 20px 0; color:#f0f6fc;">Add Seller Profile</h2>
-        
+
         <div style="margin-bottom:20px;">
           <label style="display:block; color:#8b949e; font-size:0.9em; margin-bottom:8px;">Seller URL or Phone</label>
           <input type="text" id="add-seller-url" placeholder="website.com or +1234567890" style="width:100%; padding:10px; background:#0d1117; border:1px solid #30363d; color:#c9d1d9; border-radius:6px; outline:none; font-size:0.9em;">
         </div>
-        
+
         <div style="margin-bottom:20px;">
           <label style="display:block; color:#8b949e; font-size:0.9em; margin-bottom:8px;">Display Name</label>
           <input type="text" id="add-seller-name" placeholder="Seller name" style="width:100%; padding:10px; background:#0d1117; border:1px solid #30363d; color:#c9d1d9; border-radius:6px; outline:none; font-size:0.9em;">
         </div>
-        
+
         <div style="margin-bottom:20px;">
           <label style="display:block; color:#8b949e; font-size:0.9em; margin-bottom:8px;">Profile Picture URL</label>
           <input type="text" id="add-seller-image" placeholder="https://..." style="width:100%; padding:10px; background:#0d1117; border:1px solid #30363d; color:#c9d1d9; border-radius:6px; outline:none; font-size:0.9em; margin-bottom:10px;">
           <input type="file" id="add-seller-image-file" accept="image/*" style="width:100%; padding:8px; background:#0d1117; border:1px solid #30363d; color:#8b949e; border-radius:6px; outline:none; cursor:pointer;">
         </div>
-        
+
+        <div id="add-seller-preview-container" class="hidden" style="margin-bottom:20px;">
+          <label style="display:block; color:#8b949e; font-size:0.9em; margin-bottom:8px;">Profile Preview</label>
+          <div id="add-seller-preview" style="width:100%;"></div>
+        </div>
+
         <div style="margin-bottom:20px;">
           <label style="display:block; color:#8b949e; font-size:0.9em; margin-bottom:8px;">Starting Trust Score</label>
           <select id="add-seller-trust" style="width:100%; padding:10px; background:#0d1117; border:1px solid #30363d; color:#c9d1d9; border-radius:6px; outline:none; font-size:0.9em;">
@@ -6871,12 +7238,12 @@ async function openAdminAddSellerModal() {
             <option value="scam">Scam (-100)</option>
           </select>
         </div>
-        
+
         <div style="margin-bottom:20px;">
           <label style="display:block; color:#8b949e; font-size:0.9em; margin-bottom:8px;">Description (Optional)</label>
           <textarea id="add-seller-description" placeholder="Notes about this seller..." style="width:100%; padding:10px; background:#0d1117; border:1px solid #30363d; color:#c9d1d9; border-radius:6px; outline:none; font-size:0.9em; min-height:60px; resize:vertical;"></textarea>
         </div>
-        
+
         <div style="display:flex; gap:12px; justify-content:flex-end;">
           <button onclick="document.getElementById('admin-add-seller-modal').remove()" style="background:none; border:1px solid #30363d; color:#8b949e; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:600;">Cancel</button>
           <button onclick="saveAdminAddedSeller()" style="background:#8b5cf6; border:none; color:white; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:600;">Add Seller</button>
@@ -6884,9 +7251,15 @@ async function openAdminAddSellerModal() {
       </div>
     </div>
   `;
-  
+
   document.body.insertAdjacentHTML('beforeend', modalHTML);
-  
+
+  // Add event listener for URL input to show preview
+  document.getElementById('add-seller-url').addEventListener('input', function() {
+    handleInput('add-seller-url', 'add-seller-preview');
+    document.getElementById('add-seller-preview-container').classList.remove('hidden');
+  });
+
   document.getElementById('add-seller-image-file').addEventListener('change', async (e) => {
     if (e.target.files[0]) {
       const file = e.target.files[0];
@@ -7057,4 +7430,325 @@ async function markSellerTrust(url, trustLevel) {
     showToast("Error marking seller: " + error.message, "error");
   }
 }
+/* ADMIN: DELETE ENTIRE SELLER PROFILE */
+async function deleteSellerProfile(url, displayName) {
+  if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID) {
+    showToast("Admin access required", "error");
+    return;
+  }
+
+  // First confirmation modal
+  const confirm1 = await showConfirm(
+    `You are about to delete the entire profile for:<br><strong>${escapeHTML(displayName || url)}</strong><br><br>This will remove ALL associated reports and ratings. This action cannot be undone.`,
+    "Confirm Deletion Step 1 of 3",
+    true
+  );
+
+  if (!confirm1) return;
+
+  // Second confirmation with URL verification
+  const confirm2 = await showConfirm(
+    `Please verify the URL to delete:<br><strong>${escapeHTML(url)}</strong><br><br>Type the URL below to confirm:`,
+    "Confirm Deletion Step 2 of 3",
+    true,
+    true, // This indicates we need text input
+    url // The expected text to type
+  );
+
+  if (!confirm2) return;
+
+  // Third confirmation with final warning
+  const confirm3 = await showConfirm(
+    `FINAL CONFIRMATION:<br><strong>DELETE ENTIRE PROFILE</strong><br><br>All reports and ratings for ${escapeHTML(displayName || url)} will be permanently removed.<br><br>Type "DELETE" to confirm:`,
+    "Final Confirmation Step 3 of 3",
+    true,
+    true, // This indicates we need text input
+    "DELETE" // The expected text to type
+  );
+
+  if (!confirm3) return;
+
+  try {
+    // Show loading indicator
+    const overlay = document.getElementById('custom-confirm-modal');
+    const titleEl = document.getElementById('modal-title');
+    const msgEl = document.getElementById('modal-message');
+    const actionsEl = document.querySelector('.modal-actions');
+
+    if (overlay) {
+      titleEl.innerText = "Deleting Profile...";
+      msgEl.innerHTML = `
+        <div style="padding:20px; text-align:center;">
+          <div class="modal-loader"></div>
+          <p style="margin-top:15px; color:#8b949e;">Removing all associated data...</p>
+        </div>
+      `;
+      if (actionsEl) actionsEl.style.display = 'none';
+    }
+
+    // Get all reports and ratings for this URL
+    const reportsQuery = query(collection(db, "reports"), where("url", "==", url));
+    const ratingsQuery = query(collection(db, "ratings"), where("url", "==", url));
+
+    const [reportsSnapshot, ratingsSnapshot] = await Promise.all([
+      getDocs(reportsQuery),
+      getDocs(ratingsQuery)
+    ]);
+
+    // Delete all reports
+    const reportDeletes = reportsSnapshot.docs.map(doc => deleteDoc(doc.ref));
+    // Delete all ratings
+    const ratingDeletes = ratingsSnapshot.docs.map(doc => deleteDoc(doc.ref));
+
+    // Execute all deletions
+    await Promise.all([...reportDeletes, ...ratingDeletes]);
+
+    // Store original data for potential restoration
+    const originalReports = [];
+    const originalRatings = [];
+
+    // Collect original reports
+    reportsSnapshot.forEach(doc => {
+      originalReports.push({ id: doc.id, data: doc.data() });
+    });
+
+    // Collect original ratings
+    ratingsSnapshot.forEach(doc => {
+      originalRatings.push({ id: doc.id, data: doc.data() });
+    });
+
+    // Record in recently deleted (for admin recovery) with original data
+    await addDoc(collection(db, "recently_deleted"), {
+      url: url,
+      displayName: displayName,
+      deletedBy: auth.currentUser.uid,
+      deletedAt: Date.now(),
+      originalReportCount: reportsSnapshot.size,
+      originalRatingCount: ratingsSnapshot.size,
+      originalReports: originalReports,
+      originalRatings: originalRatings
+    });
+
+    // Close modal and show success
+    if (overlay) overlay.classList.remove('active');
+
+    showToast(`Profile for ${displayName || url} has been deleted`, "success");
+
+    // Refresh the current view
+    if (window.lastDetailsArgs) {
+      // If we're on the details page for this profile, go back to home
+      if (window.lastDetailsArgs.url === url) {
+        handleBackClick('home');
+      } else {
+        // Otherwise, refresh the current view
+        populateDetailsView(window.lastDetailsArgs.url, window.lastDetailsArgs.type);
+      }
+    }
+
+    // Clear search index to remove this profile
+    SearchSystem.index = SearchSystem.index.filter(item => item.url !== url.toLowerCase());
+
+  } catch (error) {
+    console.error("Error deleting profile:", error);
+    showToast(`Error deleting profile: ${error.message}`, "error");
+    if (overlay) {
+      const actionsEl = document.querySelector('.modal-actions');
+      if (actionsEl) actionsEl.style.display = 'flex';
+    }
+  }
+}
+
+/* RECENTLY DELETED PROFILES SECTION */
+async function showRecentlyDeleted() {
+  if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID) {
+    showToast("Admin access required", "error");
+    return;
+  }
+
+  const existing = document.getElementById('recently-deleted-modal');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'recently-deleted-modal';
+  overlay.className = 'custom-modal-overlay active';
+
+  overlay.innerHTML = `
+    <div class="custom-modal" style="max-width:700px; width:90%; max-height:90vh; overflow:hidden;">
+      <div style="display:flex; justify-content:space-between; align-items-center; margin-bottom:20px;">
+        <h2 style="margin:0; color:#f0f6fc;">Recently Deleted Profiles</h2>
+        <button onclick="document.getElementById('recently-deleted-modal').remove()" style="background:none; border:none; color:#8b949e; cursor:pointer; padding:5px;">
+          <svg viewBox="0 0 24 24" style="width:24px; height:24px; fill:currentColor;"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </div>
+
+      <div id="recently-deleted-content" style="max-height:60vh; overflow-y:auto; padding-right:10px;">
+        <div style="text-align:center; padding:40px; color:#8b949e;">
+          <div class="modal-loader" style="margin:0 auto 15px;"></div>
+          <p>Loading deleted profiles...</p>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  try {
+    const q = query(collection(db, "recently_deleted"), orderBy("deletedAt", "desc"));
+    const snapshot = await getDocs(q);
+
+    const contentDiv = document.getElementById('recently-deleted-content');
+
+    if (snapshot.empty) {
+      contentDiv.innerHTML = '<p style="text-align:center; padding:40px; color:#8b949e;">No recently deleted profiles.</p>';
+      return;
+    }
+
+    let html = '';
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const deletedTime = new Date(data.deletedAt).toLocaleString();
+
+      html += `
+        <div class="mini-card" style="margin-bottom:12px; border-color:#ff4d4d;">
+          <div class="card-header" style="justify-content:space-between;">
+            <div style="display:flex; flex-direction:column;">
+              <div class="card-user" style="color:#ff4d4d; font-weight:bold;">${escapeHTML(data.displayName || data.url)}</div>
+              <small style="color:#8b949e;">${escapeHTML(data.url)}</small>
+            </div>
+            <div style="text-align:right; font-size:0.8em; color:#8b949e;">
+              <div>Deleted: ${deletedTime}</div>
+              <div>Items: ${data.originalReportCount + data.originalRatingCount}</div>
+            </div>
+          </div>
+          <div style="display:flex; gap:8px; margin-top:10px;">
+            <button onclick="event.preventDefault(); event.stopPropagation(); restoreDeletedProfile('${doc.id}', '${escapeHTML(data.url)}')" style="flex:1; background:rgba(56, 189, 248, 0.1); border:1px solid #38bdf8; color:#38bdf8; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:0.85em;">Restore</button>
+            <button onclick="event.preventDefault(); event.stopPropagation(); permanentDeleteProfile('${doc.id}', '${escapeHTML(data.displayName || data.url)}')" style="flex:1; background:rgba(255, 77, 77, 0.1); border:1px solid #ff4d4d; color:#ff4d4d; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:0.85em;">Permanently Delete</button>
+          </div>
+        </div>
+      `;
+    });
+
+    contentDiv.innerHTML = html;
+
+  } catch (error) {
+    console.error("Error loading recently deleted:", error);
+    document.getElementById('recently-deleted-content').innerHTML =
+      `<p style="text-align:center; padding:40px; color:#ff4d4d;">Error loading deleted profiles: ${error.message}</p>`;
+  }
+}
+
+/* RESTORE DELETED PROFILE */
+async function restoreDeletedProfile(docId, url) {
+  if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID) {
+    showToast("Admin access required", "error");
+    return;
+  }
+
+  const confirm = await showConfirm(
+    `Restore profile for:<br><strong>${escapeHTML(url)}</strong>?<br><br>This will restore all previously deleted reports and ratings.`,
+    "Confirm Restore",
+    true
+  );
+
+  if (!confirm) return;
+
+  try {
+    // Close the recently deleted modal before performing the action
+    const modal = document.getElementById('recently-deleted-modal');
+    if (modal) {
+      modal.remove();
+    }
+
+    // Get the deleted record
+    const docRef = doc(db, "recently_deleted", docId);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      showToast("Record not found", "error");
+      return;
+    }
+
+    const data = docSnap.data();
+
+    // Restore the original reports and ratings
+    const restorePromises = [];
+
+    // Restore reports
+    if (data.originalReports && Array.isArray(data.originalReports)) {
+      for (const report of data.originalReports) {
+        // Remove the ID from the stored data since we're creating a new document
+        const reportData = { ...report.data };
+        // Add a note that this was restored
+        reportData.restoredAt = Date.now();
+        reportData.restoredBy = auth.currentUser.uid;
+        restorePromises.push(addDoc(collection(db, "reports"), reportData));
+      }
+    }
+
+    // Restore ratings
+    if (data.originalRatings && Array.isArray(data.originalRatings)) {
+      for (const rating of data.originalRatings) {
+        // Remove the ID from the stored data since we're creating a new document
+        const ratingData = { ...rating.data };
+        // Add a note that this was restored
+        ratingData.restoredAt = Date.now();
+        ratingData.restoredBy = auth.currentUser.uid;
+        restorePromises.push(addDoc(collection(db, "ratings"), ratingData));
+      }
+    }
+
+    // Execute all restore operations
+    await Promise.all(restorePromises);
+
+    // Remove the record from recently_deleted
+    await deleteDoc(docRef);
+
+    showToast(`Profile for ${data.displayName || url} restored successfully`, "success");
+
+    // Refresh the recently deleted list
+    showRecentlyDeleted();
+
+  } catch (error) {
+    console.error("Error restoring profile:", error);
+    showToast(`Error restoring profile: ${error.message}`, "error");
+  }
+}
+
+/* PERMANENT DELETE */
+async function permanentDeleteProfile(docId, displayName) {
+  if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID) {
+    showToast("Admin access required", "error");
+    return;
+  }
+
+  const confirm = await showConfirm(
+    `Permanently delete:<br><strong>${escapeHTML(displayName)}</strong>?<br><br>This action cannot be undone.`,
+    "Confirm Permanent Deletion",
+    true
+  );
+
+  if (!confirm) return;
+
+  try {
+    // Close the recently deleted modal before performing the action
+    const modal = document.getElementById('recently-deleted-modal');
+    if (modal) {
+      modal.remove();
+    }
+
+    await deleteDoc(doc(db, "recently_deleted", docId));
+    showToast(`Profile permanently deleted`, "success");
+
+    // Refresh the recently deleted list
+    showRecentlyDeleted();
+
+  } catch (error) {
+    console.error("Error with permanent deletion:", error);
+    showToast(`Error: ${error.message}`, "error");
+  }
+}
+
+window.deleteSellerProfile = deleteSellerProfile;
+window.showRecentlyDeleted = showRecentlyDeleted;
+window.restoreDeletedProfile = restoreDeletedProfile;
+window.permanentDeleteProfile = permanentDeleteProfile;
 window.markSellerTrust = markSellerTrust;
