@@ -251,13 +251,6 @@ button {
   padding: 160px 20px 40px;
   position: relative;
   overflow: hidden;
-  transition: opacity 0.3s ease, visibility 0.3s ease;
-}
-
-.hero.hero-hidden {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
 }
 
 .hero > * {
@@ -296,6 +289,16 @@ button {
     box-shadow: 0 10px 40px rgba(0,0,0,0.6);
     border: 1px solid rgba(255,255,255,0.08);
     animation: slideDown 0.3s ease forwards;
+  }
+
+  /* Hide hero content when search is expanded */
+  .search-box.search-expanded ~ .hero > *:not(.search-box) {
+    display: none;
+  }
+
+  #home .search-box.search-expanded ~ .hero h1,
+  #home .search-box.search-expanded ~ .hero h2 {
+    display: none;
   }
 }
 
