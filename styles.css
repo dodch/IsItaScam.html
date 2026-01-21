@@ -251,6 +251,13 @@ button {
   padding: 160px 20px 40px;
   position: relative;
   overflow: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.hero.hero-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .hero > * {

@@ -1571,8 +1571,13 @@ function initSearchUI() {
     // On focus, show recent searches on mobile and add expanded class
     input.addEventListener('focus', (e) => {
         const searchBox = document.querySelector('.search-box');
+        const hero = document.querySelector('.hero');
         if (searchBox) {
             searchBox.classList.add('search-expanded');
+        }
+        // Hide hero when search is expanded on mobile
+        if (hero && window.innerWidth <= 600) {
+            hero.classList.add('hero-hidden');
         }
 
         const val = input.value.trim();
@@ -1625,8 +1630,13 @@ function initSearchUI() {
     // Remove expanded class on blur
     input.addEventListener('blur', () => {
         const searchBox = document.querySelector('.search-box');
+        const hero = document.querySelector('.hero');
         if (searchBox) {
             searchBox.classList.remove('search-expanded');
+        }
+        // Show hero again when search closes on mobile
+        if (hero) {
+            hero.classList.remove('hero-hidden');
         }
     });
 }
@@ -6447,14 +6457,24 @@ window.addEventListener('scroll', () => {
   const homeSection = document.getElementById('home');
   const fab = document.querySelector('.floating-pill-btn');
   const reportSection = document.getElementById('report');
+  const hero = document.querySelector('.hero');
+  const searchInput = document.getElementById('search-input');
   
   // Sticky Search Logic
   if (searchBox && homeSection && !homeSection.classList.contains('hidden')) {
     // Keep expanded if user has focused the search (search-expanded class added by focus event)
     if (searchBox.classList.contains('search-expanded')) {
-      // User has expanded it, keep it sticky
-      searchBox.classList.add('sticky-search');
-      if (navbar) navbar.classList.add('hidden');
+      // If user scrolls while search is expanded, collapse it back to normal
+      if (window.scrollY > 0 && searchInput && document.activeElement !== searchInput) {
+        // Only collapse if user has scrolled down and input is not focused
+        searchBox.classList.remove('search-expanded');
+        if (hero) hero.classList.remove('hero-hidden');
+        searchInput.blur();
+      } else {
+        // User has expanded it, keep it sticky
+        searchBox.classList.add('sticky-search');
+        if (navbar) navbar.classList.add('hidden');
+      }
     } else if (window.scrollY > 150) {
       // Automatic sticky on scroll down
       searchBox.classList.add('sticky-search');
