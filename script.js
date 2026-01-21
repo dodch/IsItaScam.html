@@ -1077,11 +1077,13 @@ function switchActivityTab(tab) {
 
 /* ADMIN DASHBOARD TABS */
 function switchAdminTab(tab) {
+  const sellersSection = document.getElementById('admin-sellers-section');
   const verifiedSection = document.getElementById('admin-verified-section');
   const bannedSection = document.getElementById('admin-banned-section');
   const blacklistSection = document.getElementById('admin-blacklist-section');
   const abuseSection = document.getElementById('admin-abuse-section');
   
+  const sellersBtn = document.getElementById('admin-sellers-tab-btn');
   const verifiedBtn = document.getElementById('admin-verified-tab-btn');
   const bannedBtn = document.getElementById('admin-banned-tab-btn');
   const blacklistBtn = document.getElementById('admin-blacklist-tab-btn');
@@ -1092,17 +1094,29 @@ function switchAdminTab(tab) {
   if (!verifiedSection || !bannedSection || !verifiedBtn || !bannedBtn) return;
 
   // Reset all
+  if (sellersSection) sellersSection.classList.add('hidden');
   verifiedSection.classList.add('hidden');
   bannedSection.classList.add('hidden');
   if (blacklistSection) blacklistSection.classList.add('hidden');
   if (abuseSection) abuseSection.classList.add('hidden');
   
+  if (sellersBtn) sellersBtn.classList.remove('active');
   verifiedBtn.classList.remove('active');
   bannedBtn.classList.remove('active');
   if (blacklistBtn) blacklistBtn.classList.remove('active');
   if (abuseBtn) abuseBtn.classList.remove('active');
 
-  if (tab === 'verified') {
+  if (tab === 'sellers') {
+    if (sellersSection) {
+        sellersSection.classList.remove('hidden');
+        if (sellersBtn) sellersBtn.classList.add('active');
+        if (subtitle) subtitle.innerText = "Add new seller profiles to the database.";
+        
+        sellersSection.classList.remove('animate-slide-left', 'animate-slide-right');
+        void sellersSection.offsetWidth;
+        sellersSection.classList.add('animate-slide-left');
+    }
+  } else if (tab === 'verified') {
     verifiedSection.classList.remove('hidden');
     verifiedBtn.classList.add('active');
     if (subtitle) subtitle.innerText = "Manage verified community members.";
@@ -3079,6 +3093,20 @@ async function populateDetailsView(url, type, highlightId = null) {
                 <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
                 Share
             </button>
+            ${auth.currentUser?.uid === ADMIN_UID ? `
+             <button onclick="openAdminEditModal('${escapeHTML(url)}', '${escapeHTML(enrichedName || username)}', '${escapeHTML(enrichedImage || '')}')" style="background:rgba(139, 92, 246, 0.2); border:1px solid #8b5cf6; color:#8b5cf6; padding:8px 16px; border-radius:12px; font-size:0.85rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s; flex: 1; justify-content: center; min-width: 100px; max-width: 120px;" title="Admin: Edit seller details">
+                <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                Edit
+            </button>
+             <button onclick="markSellerTrust('${escapeHTML(url)}', 'trusted')" style="background:rgba(0, 230, 118, 0.15); border:1px solid rgba(0, 230, 118, 0.4); color:#00e676; padding:8px 16px; border-radius:12px; font-size:0.85rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s; flex: 1; justify-content: center; min-width: 100px; max-width: 120px;" title="Admin: Mark as Trusted (+100)">
+                <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                Trusted
+            </button>
+             <button onclick="markSellerTrust('${escapeHTML(url)}', 'scam')" style="background:rgba(255, 77, 77, 0.15); border:1px solid rgba(255, 77, 77, 0.4); color:#ff4d4d; padding:8px 16px; border-radius:12px; font-size:0.85rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s; flex: 1; justify-content: center; min-width: 100px; max-width: 120px;" title="Admin: Mark as Scam (-100)">
+                <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+                Scam
+            </button>
+            ` : ''}
         </div>
       </div>
     `;
@@ -6385,6 +6413,46 @@ function getSkeletonHTML(count) {
   }
   return html;
 }
+/* MOBILE KEYBOARD HANDLING FOR SEARCH BOX */
+let mobileViewportHeight = window.innerHeight;
+
+window.addEventListener('resize', () => {
+  const currentHeight = window.innerHeight;
+  const searchBoxFixed = document.querySelector('.search-box.sticky-search');
+  
+  // Keyboard appeared (height decreased significantly on mobile)
+  if (currentHeight < mobileViewportHeight * 0.75 && /Android|iPhone|iPad|iPod/.test(navigator.userAgent)) {
+    if (searchBoxFixed) {
+      searchBoxFixed.style.position = 'absolute';
+      searchBoxFixed.style.top = (window.scrollY + 8) + 'px';
+    }
+  } 
+  // Keyboard hidden
+  else if (currentHeight >= mobileViewportHeight * 0.75) {
+    if (searchBoxFixed) {
+      searchBoxFixed.style.position = 'fixed';
+      searchBoxFixed.style.top = '20px';
+    }
+  }
+  mobileViewportHeight = currentHeight;
+});
+
+// Scroll search box into view when focused on mobile
+document.addEventListener('focusin', (e) => {
+  if (e.target.id === 'search-input' && /Android|iPhone|iPad|iPod/.test(navigator.userAgent)) {
+    const searchBox = document.querySelector('.search-box');
+    if (searchBox && searchBox.classList.contains('sticky-search')) {
+      // Scroll to ensure search is visible with keyboard
+      setTimeout(() => {
+        const rect = searchBox.getBoundingClientRect();
+        if (rect.top < 0 || rect.top > window.innerHeight * 0.5) {
+          searchBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    }
+  }
+});
+
 /* SCROLL LISTENER FOR STICKY SEARCH & MENU CLOSE */
 window.addEventListener('scroll', () => {
   closeMenu();
@@ -6619,3 +6687,354 @@ function triggerShake(elements) {
     }
   });
 }
+
+/* ==========================================
+   ADMIN FEATURES: EDIT SELLER, ADD SELLER, TRUST SCORE
+   ========================================== */
+
+// 1. EDIT SELLER NAME & PROFILE PICTURE FROM DETAILS VIEW
+async function openAdminEditModal(url, currentName, currentImage) {
+  if (auth.currentUser?.uid !== ADMIN_UID) {
+    showToast("Admin only", "error");
+    return;
+  }
+
+  const modalHTML = `
+    <div id="admin-edit-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:10000;">
+      <div style="background:#161b22; border:1px solid #30363d; border-radius:16px; padding:24px; max-width:500px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+        <h2 style="margin:0 0 20px 0; color:#f0f6fc;">Edit Seller Profile</h2>
+        
+        <div style="margin-bottom:20px;">
+          <label style="display:block; color:#8b949e; font-size:0.9em; margin-bottom:8px;">Seller URL</label>
+          <input type="text" id="edit-seller-url" value="${escapeHTML(url)}" disabled style="width:100%; padding:10px; background:#0d1117; border:1px solid #30363d; color:#c9d1d9; border-radius:6px; outline:none; font-size:0.9em;">
+        </div>
+        
+        <div style="margin-bottom:20px;">
+          <label style="display:block; color:#8b949e; font-size:0.9em; margin-bottom:8px;">Display Name</label>
+          <input type="text" id="edit-seller-name" value="${escapeHTML(currentName)}" placeholder="Enter seller name" style="width:100%; padding:10px; background:#0d1117; border:1px solid #30363d; color:#c9d1d9; border-radius:6px; outline:none; font-size:0.9em;">
+        </div>
+        
+        <div style="margin-bottom:20px;">
+          <label style="display:block; color:#8b949e; font-size:0.9em; margin-bottom:8px;">Profile Picture URL</label>
+          <input type="text" id="edit-seller-image" value="${escapeHTML(currentImage || '')}" placeholder="https://..." style="width:100%; padding:10px; background:#0d1117; border:1px solid #30363d; color:#c9d1d9; border-radius:6px; outline:none; font-size:0.9em; margin-bottom:10px;">
+          <input type="file" id="edit-seller-image-file" accept="image/*" style="width:100%; padding:8px; background:#0d1117; border:1px solid #30363d; color:#8b949e; border-radius:6px; outline:none; cursor:pointer;">
+          <small style="color:#8b949e; display:block; margin-top:6px;">Or upload a new image</small>
+        </div>
+        
+        ${currentImage ? `<div style="margin-bottom:20px; text-align:center;">
+          <img src="${currentImage}" style="width:120px; height:120px; border-radius:12px; object-fit:cover; border:1px solid #30363d;">
+        </div>` : ''}
+        
+        <div style="display:flex; gap:12px; justify-content:flex-end;">
+          <button onclick="document.getElementById('admin-edit-modal').remove()" style="background:none; border:1px solid #30363d; color:#8b949e; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:600;">Cancel</button>
+          <button onclick="saveAdminEditedSeller('${escapeHTML(url)}')" style="background:#8b5cf6; border:none; color:white; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:600;">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  
+  // Handle file upload
+  document.getElementById('edit-seller-image-file').addEventListener('change', async (e) => {
+    if (e.target.files[0]) {
+      const file = e.target.files[0];
+      const imageData = await processImage(file);
+      document.getElementById('edit-seller-image').value = imageData;
+    }
+  });
+}
+
+async function saveAdminEditedSeller(url) {
+  const newName = document.getElementById('edit-seller-name').value.trim();
+  const newImage = document.getElementById('edit-seller-image').value.trim();
+  
+  if (!newName) {
+    showToast("Name cannot be empty", "error");
+    return;
+  }
+  
+  try {
+    // Find and update all reports/ratings with this URL
+    const normalizedUrl = url.toLowerCase().replace(/\/$/, '');
+    
+    const qReports = query(collection(db, "reports"), where("url", "==", url));
+    const qRatings = query(collection(db, "ratings"), where("url", "==", url));
+    
+    const [reportsSnap, ratingsSnap] = await Promise.all([getDocs(qReports), getDocs(qRatings)]);
+    
+    // Update reports
+    const updatePromises = [];
+    reportsSnap.forEach(doc => {
+      updatePromises.push(updateDoc(doc.ref, {
+        displayName: newName,
+        platformImage: newImage || null
+      }));
+    });
+    
+    // Update ratings
+    ratingsSnap.forEach(doc => {
+      updatePromises.push(updateDoc(doc.ref, {
+        realName: newName,
+        platformImage: newImage || null
+      }));
+    });
+    
+    await Promise.all(updatePromises);
+    showToast("Seller profile updated successfully!", "success");
+    
+    // Close modal
+    document.getElementById('admin-edit-modal').remove();
+    
+    // Wait for Firestore to sync
+    await new Promise(r => setTimeout(r, 800));
+    
+    // Refresh details view if still on that page
+    if (window.lastDetailsArgs) {
+      populateDetailsView(window.lastDetailsArgs.url, window.lastDetailsArgs.type);
+    }
+    
+    // Clear ALL caches to force fresh data pull
+    SearchSystem.index = [];
+    allReportGroups = [];
+    currentReportLimit = REPORTS_PER_PAGE;
+    
+    // Go back to home and perform fresh search
+    showPage('home');
+    
+    // Perform fresh search to reload cards with updated names
+    setTimeout(() => {
+      performSearch();
+    }, 100);
+    
+  } catch (error) {
+    console.error("Error saving seller:", error);
+    showToast("Error updating seller: " + error.message, "error");
+  }
+}
+window.openAdminEditModal = openAdminEditModal;
+window.saveAdminEditedSeller = saveAdminEditedSeller;
+
+// 2. ADD SELLER TO DATABASE WITHOUT REPORT
+async function openAdminAddSellerModal() {
+  if (auth.currentUser?.uid !== ADMIN_UID) {
+    showToast("Admin only", "error");
+    return;
+  }
+  
+  const modalHTML = `
+    <div id="admin-add-seller-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:10000; overflow-y:auto;">
+      <div style="background:#161b22; border:1px solid #30363d; border-radius:16px; padding:24px; max-width:500px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.6); margin:20px auto;">
+        <h2 style="margin:0 0 20px 0; color:#f0f6fc;">Add Seller Profile</h2>
+        
+        <div style="margin-bottom:20px;">
+          <label style="display:block; color:#8b949e; font-size:0.9em; margin-bottom:8px;">Seller URL or Phone</label>
+          <input type="text" id="add-seller-url" placeholder="website.com or +1234567890" style="width:100%; padding:10px; background:#0d1117; border:1px solid #30363d; color:#c9d1d9; border-radius:6px; outline:none; font-size:0.9em;">
+        </div>
+        
+        <div style="margin-bottom:20px;">
+          <label style="display:block; color:#8b949e; font-size:0.9em; margin-bottom:8px;">Display Name</label>
+          <input type="text" id="add-seller-name" placeholder="Seller name" style="width:100%; padding:10px; background:#0d1117; border:1px solid #30363d; color:#c9d1d9; border-radius:6px; outline:none; font-size:0.9em;">
+        </div>
+        
+        <div style="margin-bottom:20px;">
+          <label style="display:block; color:#8b949e; font-size:0.9em; margin-bottom:8px;">Profile Picture URL</label>
+          <input type="text" id="add-seller-image" placeholder="https://..." style="width:100%; padding:10px; background:#0d1117; border:1px solid #30363d; color:#c9d1d9; border-radius:6px; outline:none; font-size:0.9em; margin-bottom:10px;">
+          <input type="file" id="add-seller-image-file" accept="image/*" style="width:100%; padding:8px; background:#0d1117; border:1px solid #30363d; color:#8b949e; border-radius:6px; outline:none; cursor:pointer;">
+        </div>
+        
+        <div style="margin-bottom:20px;">
+          <label style="display:block; color:#8b949e; font-size:0.9em; margin-bottom:8px;">Starting Trust Score</label>
+          <select id="add-seller-trust" style="width:100%; padding:10px; background:#0d1117; border:1px solid #30363d; color:#c9d1d9; border-radius:6px; outline:none; font-size:0.9em;">
+            <option value="neutral">Neutral (No history)</option>
+            <option value="trusted">Trusted (+100)</option>
+            <option value="scam">Scam (-100)</option>
+          </select>
+        </div>
+        
+        <div style="margin-bottom:20px;">
+          <label style="display:block; color:#8b949e; font-size:0.9em; margin-bottom:8px;">Description (Optional)</label>
+          <textarea id="add-seller-description" placeholder="Notes about this seller..." style="width:100%; padding:10px; background:#0d1117; border:1px solid #30363d; color:#c9d1d9; border-radius:6px; outline:none; font-size:0.9em; min-height:60px; resize:vertical;"></textarea>
+        </div>
+        
+        <div style="display:flex; gap:12px; justify-content:flex-end;">
+          <button onclick="document.getElementById('admin-add-seller-modal').remove()" style="background:none; border:1px solid #30363d; color:#8b949e; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:600;">Cancel</button>
+          <button onclick="saveAdminAddedSeller()" style="background:#8b5cf6; border:none; color:white; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:600;">Add Seller</button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  
+  document.getElementById('add-seller-image-file').addEventListener('change', async (e) => {
+    if (e.target.files[0]) {
+      const file = e.target.files[0];
+      const imageData = await processImage(file);
+      document.getElementById('add-seller-image').value = imageData;
+    }
+  });
+}
+
+async function saveAdminAddedSeller() {
+  const url = document.getElementById('add-seller-url').value.trim();
+  const name = document.getElementById('add-seller-name').value.trim();
+  const image = document.getElementById('add-seller-image').value.trim();
+  const trust = document.getElementById('add-seller-trust').value;
+  const description = document.getElementById('add-seller-description').value.trim();
+  
+  if (!url || !name) {
+    showToast("URL and name are required", "error");
+    return;
+  }
+  
+  try {
+    // Verify URL first
+    const verifiedUrl = await verifyUrl(url);
+    
+    // Create an admin record - this will appear as a special "system" entry
+    let startingScore = 50;
+    if (trust === 'trusted') {
+      // Create a synthetic 5-star rating to boost score
+      await addDoc(collection(db, "ratings"), {
+        url: verifiedUrl,
+        realName: name,
+        platformImage: image || null,
+        rating: 5,
+        good: "Added by admin as trusted seller",
+        bad: "",
+        timestamp: Date.now(),
+        uid: ADMIN_UID,
+        userEmail: "admin@system",
+        reporterName: "System Admin",
+        reporterPhoto: 'https://via.placeholder.com/40',
+        country: null
+      });
+    } else if (trust === 'scam') {
+      // Create a synthetic scam report to lower score
+      await addDoc(collection(db, "reports"), {
+        url: verifiedUrl,
+        displayName: name,
+        platformImage: image || null,
+        description: description || "Marked as scam by admin",
+        scamType: "other",
+        timestamp: Date.now(),
+        uid: ADMIN_UID,
+        userEmail: "admin@system",
+        reporterName: "System Admin",
+        reporterPhoto: 'https://via.placeholder.com/40',
+        country: null
+      });
+    } else {
+      // Neutral: Create a baseline rating
+      await addDoc(collection(db, "ratings"), {
+        url: verifiedUrl,
+        realName: name,
+        platformImage: image || null,
+        rating: 3,
+        good: "Added by admin",
+        bad: "",
+        timestamp: Date.now(),
+        uid: ADMIN_UID,
+        userEmail: "admin@system",
+        reporterName: "System Admin",
+        reporterPhoto: 'https://via.placeholder.com/40',
+        country: null
+      });
+    }
+    
+    showToast(`Seller profile added with ${trust === 'trusted' ? 'Trusted (+100)' : trust === 'scam' ? 'Scam (-100)' : 'Neutral'} starting score!`, "success");
+    document.getElementById('admin-add-seller-modal').remove();
+    
+    // Refresh search to show new seller
+    performSearch();
+    
+  } catch (error) {
+    console.error("Error adding seller:", error);
+    showToast("Error adding seller: " + error.message, "error");
+  }
+}
+window.openAdminAddSellerModal = openAdminAddSellerModal;
+window.saveAdminAddedSeller = saveAdminAddedSeller;
+
+// 3. MARK SELLER AS TRUSTED or SCAM FROM DETAILS VIEW
+async function markSellerTrust(url, trustLevel) {
+  if (auth.currentUser?.uid !== ADMIN_UID) {
+    showToast("Admin only", "error");
+    return;
+  }
+  
+  if (!['trusted', 'scam'].includes(trustLevel)) {
+    showToast("Invalid trust level", "error");
+    return;
+  }
+  
+  try {
+    const normalizedUrl = url.toLowerCase().replace(/\/$/, '');
+    
+    // Get the latest enriched data from existing reports/ratings
+    const qReports = query(collection(db, "reports"), where("url", "==", url));
+    const qRatings = query(collection(db, "ratings"), where("url", "==", url));
+    
+    const [reportsSnap, ratingsSnap] = await Promise.all([getDocs(qReports), getDocs(qRatings)]);
+    
+    let sellerName = "Unknown Seller";
+    let sellerImage = null;
+    
+    // Get the most recent enriched data
+    const allDocs = [
+      ...Array.from(reportsSnap.docs).map(d => d.data()),
+      ...Array.from(ratingsSnap.docs).map(d => d.data())
+    ].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    
+    if (allDocs.length > 0) {
+      sellerName = allDocs[0].displayName || allDocs[0].realName || allDocs[0].url;
+      sellerImage = allDocs[0].platformImage;
+    }
+    
+    if (trustLevel === 'trusted') {
+      // Add a verified 5-star rating
+      await addDoc(collection(db, "ratings"), {
+        url: url,
+        realName: sellerName,
+        platformImage: sellerImage,
+        rating: 5,
+        good: "Marked as trusted seller by administrator (+100 trust boost)",
+        bad: "",
+        timestamp: Date.now(),
+        uid: ADMIN_UID,
+        userEmail: "admin@system",
+        reporterName: "System Admin",
+        reporterPhoto: 'https://via.placeholder.com/40',
+        country: null
+      });
+      showToast("✓ Seller marked as TRUSTED (+100 score boost)", "success");
+    } else {
+      // Add a scam report
+      await addDoc(collection(db, "reports"), {
+        url: url,
+        displayName: sellerName,
+        platformImage: sellerImage,
+        description: "Marked as scam by administrator (-100 trust reduction)",
+        scamType: "other",
+        timestamp: Date.now(),
+        uid: ADMIN_UID,
+        userEmail: "admin@system",
+        reporterName: "System Admin",
+        reporterPhoto: 'https://via.placeholder.com/40',
+        country: null
+      });
+      showToast("✗ Seller marked as SCAM (-100 score reduction)", "error");
+    }
+    
+    // Refresh details view
+    if (window.lastDetailsArgs) {
+      populateDetailsView(window.lastDetailsArgs.url, window.lastDetailsArgs.type);
+    }
+    
+  } catch (error) {
+    console.error("Error marking seller:", error);
+    showToast("Error marking seller: " + error.message, "error");
+  }
+}
+window.markSellerTrust = markSellerTrust;

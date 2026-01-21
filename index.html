@@ -498,9 +498,19 @@
 
     <!-- Admin Tabs -->
     <div class="home-tab-selector" style="margin-top: 0; margin-bottom: 20px;">
+      <button class="home-tab-btn" id="admin-sellers-tab-btn" onclick="switchAdminTab('sellers')">Add Seller</button>
       <button class="home-tab-btn active" id="admin-verified-tab-btn" onclick="switchAdminTab('verified')">Verified Users</button>
       <button class="home-tab-btn" id="admin-banned-tab-btn" onclick="switchAdminTab('banned')">Banned Users</button>
       <div class="tab-indicator" id="admin-tab-indicator"></div>
+    </div>
+
+    <!-- Add Seller Section -->
+    <div id="admin-sellers-section" class="hidden">
+        <div class="mini-card" style="margin-bottom: 20px; border-color: #00e676;">
+            <h3 style="margin: 0 0 15px 0; color: #00e676;">Add Seller Profile to Database</h3>
+            <p style="margin: 0 0 15px 0; color: #8b949e; font-size: 0.9em;">Add a seller without requiring reports or ratings. Set initial trust score.</p>
+            <button onclick="openAdminAddSellerModal()" class="visit-btn" style="width:100%; background: rgba(0, 230, 118, 0.1); color: #00e676; border-color: #00e676;">+ Add Seller</button>
+        </div>
     </div>
 
     <!-- Verified Section -->
@@ -511,6 +521,7 @@
             <input type="text" id="admin-verify-name" placeholder="Display Name (Optional)" style="width:100%; margin-bottom:10px; padding:10px; background:#0d1117; border:1px solid #30363d; color:white; border-radius:6px; outline:none;">
             <button onclick="manualVerifyUser()" class="visit-btn" style="width:100%;">Grant Verification</button>
         </div>
+        
         <div id="admin-user-list" class="report-grid"></div>
     </div>
 
