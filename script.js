@@ -1,7 +1,584 @@
 /* ==========================================
-   FIREBASE CONFIGURATION
+   LANGUAGE TRANSLATION SYSTEM
    ========================================== */
-// Import the functions you need from the SDKs you need
+const translations = {
+  en: {
+    'nav-home': 'Home',
+    'nav-login': 'Login',
+    'hero-title': 'Before You Buy, Ask One Question',
+    'hero-subtitle': 'Is it a scam?',
+    'search-placeholder': 'Website, username, phone number...',
+    'search-results': 'Search Results',
+    'community-reports': 'Community Reports',
+    'seller-ratings': 'Seller Ratings',
+    'trending': '🔥 Trending',
+    'most-recent': '🕒 Most Recent',
+    'highest-risk': '⚠️ Highest Risk',
+    'load-more': 'Load More',
+    'notifications': 'Notifications',
+    'rate-seller': 'Rate Seller',
+    'report-scam': 'Report Scam',
+    'submit-rating': 'Submit Rating',
+    'submit-report': 'Submit Report',
+    'trust-score': 'Trust Score',
+    'paid-no-delivery': 'Paid, No Delivery',
+    'user-paid-d17': 'User paid via D17 and got blocked.',
+    'rate-or-report': 'Rate or Report',
+    'admin-dashboard': 'Admin Dashboard',
+    'manage-verified': 'Manage verified community members.',
+    'search-name-uid': 'Search by Name or UID...',
+    'add-seller': 'Add Seller',
+    'verified-users': 'Verified Users',
+    'banned-users': 'Banned Users',
+    'add-seller-profile': 'Add Seller Profile to Database',
+    'add-seller-desc': 'Add a seller without requiring reports or ratings. Set initial trust score.',
+    'manually-verify': 'Manually Verify User',
+    'grant-verification': 'Grant Verification',
+    'manually-ban': 'Manually Ban User',
+    'ban-user': 'Ban User',
+    'user-uid': 'User UID (Required)',
+    'display-name': 'Display Name (Optional)',
+    'ban-reason': 'Reason for ban (e.g. Spamming)',
+    'privacy-policy': 'Privacy Policy',
+    'terms-of-service': 'Terms of Service',
+    'contact-support': 'Contact Support',
+    'about-us': 'About Us',
+    'about-desc': 'IsItAScam is a community-driven platform dedicated to identifying and reporting online scams. Our mission is to create a safer digital environment by sharing real user experiences.',
+    'about-us-title': 'About Us',
+    'report': 'Report',
+    'banned': 'Banned',
+    'privacy-policy-title': 'Privacy Policy',
+    'terms-of-service-title': 'Terms of Service',
+    'profile-tab': 'Profile',
+    'activity-tab': 'Activity',
+    'rate-link-placeholder': 'Link / username / phone',
+    'scam-link-placeholder': 'Link / username / phone',
+    'rate-good-placeholder': 'What was good? (e.g. Fast delivery)',
+    'rate-bad-placeholder': 'What was bad? (e.g. Packaging)',
+    'scammer-name-placeholder': 'Display Name (e.g. Shop Name)',
+    'scammer-desc-placeholder': 'Describe what happened...',
+    'upload-proof': 'Upload Proof (Optional)',
+    'login-title': 'Login',
+    'login-subtitle': 'Sign in to submit and track reports.',
+    'continue-with-google': 'Continue with Google',
+    'firebase-note': 'Firebase authentication is active.',
+    'cancel-deletion': 'Cancel',
+    'make-contribution': 'Make a Contribution',
+    'contribution-desc': 'Help the community by reporting a scam or rating a trusted seller.',
+    'report-a-scam': 'Report a Scam',
+    'seller-analysis': 'Seller Analysis',
+    'insufficient-data': 'Insufficient data for advanced AI analysis.',
+    'critical-threat': '🚨 CRITICAL THREAT DETECTED: Advanced analysis identified a high-velocity scam pattern ({count} reports in 30 days). The profile exhibits behavior consistent with fraudulent operations. Do not engage.',
+    'risk-advisory': '⚠ Risk Advisory: Historical analysis found {count} confirmed scam reports. Although recent activity is lower, the account has a compromised trust history. Proceed with extreme caution.',
+    'inconclusive-analysis': 'Detailed text analysis was inconclusive due to brief reviews.',
+    'login-to-report': 'You must be logged in to report a scam.',
+    'login-to-report-content': 'Please login to report content.',
+    'my-activity': 'My Activity',
+    'my-reports': 'My Reports',
+    'my-ratings': 'My Ratings',
+    'select-rating': 'Select Rating',
+    'help-community': 'Help community stay safe by reporting suspicious activity.',
+    'results-disclaimer': 'Results are based on community reports and public data.',
+    'rate': 'Rate',
+    'share': 'Share',
+    'edit': 'Edit',
+    'delete': 'Delete',
+    'trusted': 'Trusted',
+    'scam': 'Scam',
+    'ai-summary-title': 'AI Review Summary',
+    'ai-elite': '<strong>Elite Status:</strong> This profile maintains a near-perfect {score}/5 rating.',
+    'ai-trusted': '<strong>Trusted Seller:</strong> Analysis shows generally positive feedback ({score}/5).',
+    'ai-mixed': '<strong>Mixed Reputation:</strong> Feedback is inconsistent ({score}/5).',
+    'ai-poor': '<strong>Poor Standing:</strong> User satisfaction is low ({score}/5).',
+    'ai-high-risk': '<strong>High Risk:</strong> Extremely negative feedback detected ({score}/5).',
+    'ai-flagged-failures': 'The AI engine flagged critical failures in <strong>{0}</strong>.',
+    'ai-flagged-failures-2': 'The AI engine flagged critical failures in <strong>{0}</strong> and <strong>{1}</strong>.',
+    'ai-positive-negligible': 'Positive feedback is negligible or suspicious.',
+    'ai-complaints-generic': 'Multiple complaints analyzed regarding service and delivery.',
+    'ai-praise': 'Buyers consistently praise the <strong>{0}</strong>.',
+    'ai-praise-2': 'Buyers consistently praise the <strong>{0}</strong> and <strong>{1}</strong>.',
+    'ai-minor-issues': 'However, a minority of users reported issues with <strong>{0}</strong>.',
+    'ai-no-issues': 'No significant recurring issues found.',
+    'ai-mixed-good-bad': 'While <strong>{0}</strong> is a strength, there are persistent concerns regarding <strong>{1}</strong>.',
+    'ai-mixed-good': '<strong>{0}</strong> is a highlight, but overall consistency varies.',
+    'ai-mixed-bad': '<strong>{0}</strong> is a primary pain point for buyers.',
+    'ai-trend-up': 'Trending Up 📈.',
+    'ai-trend-down': 'Trending Down 📉.',
+    'ai-historical': '<strong>⚠ Note:</strong> This profile has {count} historical report(s), but recent reputation is generally positive.',
+    'verified-alert': '⚠ Verified Source Alert: Trusted community members have flagged this profile.',
+    'verified-endorsement': '✓ Verified Endorsement: Trusted members have vouched for this seller.',
+    'welcome': 'Welcome,',
+    'logged-in-msg': 'You are currently logged in.',
+    'logout': 'Logout',
+    'open-admin': 'Open Admin Dashboard',
+    'reports-count-label': 'reports',
+    'visit-profile': 'Visit Profile ↗',
+    'avg-from-ratings': 'avg. from {count} ratings',
+    'status-no-info': 'Not Enough Info',
+    'status-trusted': 'Trusted Business',
+    'status-low-risk': 'Low Risk',
+    'status-potential-risk': 'Potential Risk',
+    'status-high-risk': 'High Risk',
+    'stat-trust-score': 'Trust Score',
+    'stat-reports': 'Reports',
+    'stat-ratings': 'Ratings',
+    'view-history': 'View Full History',
+    'hide-history': 'Hide History'
+  },
+  fr: {
+    'nav-home': 'Accueil',
+    'nav-login': 'Connexion',
+    'hero-title': 'Avant d\'acheter, posez une question',
+    'hero-subtitle': 'Est-ce une arnaque ?',
+    'search-placeholder': 'Site web, nom d\'utilisateur, numéro de téléphone...',
+    'search-results': 'Résultats de recherche',
+    'community-reports': 'Rapports communautaires',
+    'seller-ratings': 'Évaluations des vendeurs',
+    'trending': '🔥 Tendance',
+    'most-recent': '🕒 Plus récent',
+    'highest-risk': '⚠️ Risque le plus élevé',
+    'load-more': 'Charger plus',
+    'notifications': 'Notifications',
+    'rate-seller': 'Évaluer le vendeur',
+    'report-scam': 'Signaler une arnaque',
+    'submit-rating': 'Soumettre l\'évaluation',
+    'submit-report': 'Soumettre le rapport',
+    'trust-score': 'Score de confiance',
+    'paid-no-delivery': 'Payé, non livré',
+    'user-paid-d17': 'L\'utilisateur a payé via D17 et a été bloqué.',
+    'rate-or-report': 'Évaluer ou signaler',
+    'admin-dashboard': 'Tableau de bord administrateur',
+    'manage-verified': 'Gérer les membres communautaires vérifiés.',
+    'search-name-uid': 'Rechercher par nom ou UID...',
+    'add-seller': 'Ajouter un vendeur',
+    'verified-users': 'Utilisateurs vérifiés',
+    'banned-users': 'Utilisateurs bannis',
+    'add-seller-profile': 'Ajouter un profil de vendeur à la base de données',
+    'add-seller-desc': 'Ajouter un vendeur sans exiger de rapports ou d\'évaluations. Définir le score de confiance initial.',
+    'manually-verify': 'Vérifier manuellement l\'utilisateur',
+    'grant-verification': 'Accorder la vérification',
+    'manually-ban': 'Bannir manuellement l\'utilisateur',
+    'ban-user': 'Bannir l\'utilisateur',
+    'user-uid': 'UID de l\'utilisateur (obligatoire)',
+    'display-name': 'Nom d\'affichage (facultatif)',
+    'ban-reason': 'Raison du bannissement (ex: Spam)',
+    'privacy-policy': 'Politique de confidentialité',
+    'terms-of-service': 'Conditions d\'utilisation',
+    'contact-support': 'Contacter le support',
+    'about-us': 'À propos de nous',
+    'about-desc': 'IsItAScam est une plateforme communautaire dédiée à l\'identification et au signalement des arnaques en ligne. Notre mission est de créer un environnement numérique plus sûr en partageant de véritables expériences utilisateur.',
+    'about-us-title': 'À propos de nous',
+    'report': 'Signaler',
+    'banned': 'Banni',
+    'privacy-policy-title': 'Politique de confidentialité',
+    'terms-of-service-title': 'Conditions d\'utilisation',
+    'profile-tab': 'Profil',
+    'activity-tab': 'Activité',
+    'rate-link-placeholder': 'Lien / nom d\'utilisateur / téléphone...',
+    'scam-link-placeholder': 'Lien / nom d\'utilisateur / téléphone...',
+    'rate-good-placeholder': 'Qu\'est-ce qui était bon ? (ex: Livraison rapide)',
+    'rate-bad-placeholder': 'Qu\'est-ce qui était mauvais ? (ex: Emballage)',
+    'scammer-name-placeholder': 'Nom d\'affichage (ex: Nom du magasin)',
+    'scammer-desc-placeholder': 'Décrivez ce qui s\'est passé...',
+    'upload-proof': 'Télécharger la preuve (Optionnel)',
+    'login-title': 'Connexion',
+    'login-subtitle': 'Connectez-vous pour soumettre et suivre les rapports.',
+    'continue-with-google': 'Continuer avec Google',
+    'firebase-note': 'L\'authentification Firebase est active.',
+    'cancel-deletion': 'Annuler',
+    'make-contribution': 'Faire une contribution',
+    'contribution-desc': 'Aidez la communauté en signalant une arnaque ou en évaluant un vendeur de confiance.',
+    'report-a-scam': 'Signaler une arnaque',
+    'seller-analysis': 'Analyse du vendeur',
+    'insufficient-data': 'Données insuffisantes pour l\'analyse IA avancée.',
+    'critical-threat': '🚨 MENACE CRITIQUE DÉTECTÉE : L\'analyse avancée a identifié un modèle d\'arnaque à haute vélocité ({count} signalements en 30 jours). Le profil présente un comportement cohérent avec des opérations frauduleuses. Ne pas engager.',
+    'risk-advisory': '⚠ Avis de risque : L\'analyse historique a trouvé {count} signalements d\'arnaque confirmés. Bien que l\'activité récente soit plus faible, le compte a un historique de confiance compromis. Procédez avec une prudence extrême.',
+    'inconclusive-analysis': 'L\'analyse de texte détaillée était inconclusive en raison de brèves critiques.',
+    'login-to-report': 'Vous devez être connecté pour signaler une arnaque.',
+    'login-to-report-content': 'Veuillez vous connecter pour signaler du contenu.',
+    'my-activity': 'Mon activité',
+    'my-reports': 'Mes rapports',
+    'my-ratings': 'Mes évaluations',
+    'select-rating': 'Sélectionner la note',
+    'help-community': 'Aidez la communauté à rester en sécurité en signalant les activités suspectes.',
+    'results-disclaimer': 'Les résultats sont basés sur les rapports communautaires et les données publiques.',
+    'rate': 'Évaluer',
+    'share': 'Partager',
+    'edit': 'Modifier',
+    'delete': 'Supprimer',
+    'trusted': 'Fiable',
+    'scam': 'Arnaque',
+    'ai-summary-title': 'Résumé IA',
+    'ai-elite': '<strong>Statut Élite :</strong> Ce profil maintient une note quasi parfaite de {score}/5.',
+    'ai-trusted': '<strong>Vendeur de Confiance :</strong> L\'analyse montre des retours généralement positifs ({score}/5).',
+    'ai-mixed': '<strong>Réputation Mitigée :</strong> Les retours sont incohérents ({score}/5).',
+    'ai-poor': '<strong>Mauvaise Posture :</strong> La satisfaction des utilisateurs est faible ({score}/5).',
+    'ai-high-risk': '<strong>Haut Risque :</strong> Des retours extrêmement négatifs détectés ({score}/5).',
+    'ai-flagged-failures': 'L\'IA a signalé des échecs critiques dans <strong>{0}</strong>.',
+    'ai-flagged-failures-2': 'L\'IA a signalé des échecs critiques dans <strong>{0}</strong> et <strong>{1}</strong>.',
+    'ai-positive-negligible': 'Les retours positifs sont négligeables ou suspects.',
+    'ai-complaints-generic': 'Multiples plaintes analysées concernant le service et la livraison.',
+    'ai-praise': 'Les acheteurs louent constamment <strong>{0}</strong>.',
+    'ai-praise-2': 'Les acheteurs louent constamment <strong>{0}</strong> et <strong>{1}</strong>.',
+    'ai-minor-issues': 'Cependant, une minorité d\'utilisateurs a signalé des problèmes avec <strong>{0}</strong>.',
+    'ai-no-issues': 'Aucun problème récurrent significatif trouvé.',
+    'ai-mixed-good-bad': 'Bien que <strong>{0}</strong> soit une force, il y a des préoccupations persistantes concernant <strong>{1}</strong>.',
+    'ai-mixed-good': '<strong>{0}</strong> est un point fort, mais la cohérence globale varie.',
+    'ai-mixed-bad': '<strong>{0}</strong> est un point douloureux majeur pour les acheteurs.',
+    'ai-trend-up': 'Tendance à la hausse 📈.',
+    'ai-trend-down': 'Tendance à la baisse 📉.',
+    'ai-historical': '<strong>⚠ Note :</strong> Ce profil a {count} rapport(s) historique(s), mais la réputation récente est généralement positive.',
+    'verified-alert': '⚠ Alerte Source Vérifiée : Des membres de confiance ont signalé ce profil.',
+    'verified-endorsement': '✓ Approbation Vérifiée : Des membres de confiance ont recommandé ce vendeur.',
+    'welcome': 'Bienvenue,',
+    'logged-in-msg': 'Vous êtes actuellement connecté.',
+    'logout': 'Déconnexion',
+    'open-admin': 'Ouvrir le tableau de bord admin',
+    'reports-count-label': 'rapports',
+    'visit-profile': 'Visiter le profil ↗',
+    'avg-from-ratings': 'moy. de {count} évaluations',
+    'status-no-info': 'Infos insuffisantes',
+    'status-trusted': 'Commerce de confiance',
+    'status-low-risk': 'Faible risque',
+    'status-potential-risk': 'Risque potentiel',
+    'status-high-risk': 'Risque élevé',
+    'stat-trust-score': 'Score de confiance',
+    'stat-reports': 'Rapports',
+    'stat-ratings': 'Évaluations',
+    'view-history': 'Voir l\'historique complet',
+    'hide-history': 'Masquer l\'historique'
+  },
+  ar: {
+    'nav-home': 'الرئيسية',
+    'nav-login': 'تسجيل الدخول',
+    'hero-title': 'قبل الشراء، اسأل سؤالاً واحداً',
+    'hero-subtitle': 'هل هي عملية احتيال؟',
+    'search-placeholder': 'الموقع الإلكتروني، اسم المستخدم، رقم الهاتف...',
+    'search-results': 'نتائج البحث',
+    'community-reports': 'تقارير المجتمع',
+    'seller-ratings': 'تقييمات البائعين',
+    'trending': '🔥 الشائع',
+    'most-recent': '🕒 الأحدث',
+    'highest-risk': '⚠️ أعلى مخاطرة',
+    'load-more': 'تحميل المزيد',
+    'notifications': 'الإشعارات',
+    'rate-seller': 'تقييم البائع',
+    'report-scam': 'الإبلاغ عن احتيال',
+    'submit-rating': 'إرسال التقييم',
+    'submit-report': 'إرسال التقرير',
+    'trust-score': 'نقاط الثقة',
+    'paid-no-delivery': 'مدفوع، لم يتم التسليم',
+    'user-paid-d17': 'المستخدم دفع عبر D17 وتم حظره.',
+    'rate-or-report': 'قيم أو أبلغ',
+    'admin-dashboard': 'لوحة التحكم',
+    'manage-verified': 'إدارة الأعضاء الموثوقين.',
+    'search-name-uid': 'البحث بالاسم أو UID...',
+    'add-seller': 'إضافة بائع',
+    'verified-users': 'المستخدمون الموثوقون',
+    'banned-users': 'المستخدمون المحظورون',
+    'add-seller-profile': 'إضافة ملف تعريف بائع إلى قاعدة البيانات',
+    'add-seller-desc': 'إضافة بائع دون الحاجة إلى تقارير أو تقييمات. تعيين نقاط الثقة الأولية.',
+    'manually-verify': 'التحقق من المستخدم يدوياً',
+    'grant-verification': 'منح التحقق',
+    'manually-ban': 'حظر المستخدم يدوياً',
+    'ban-user': 'حظر المستخدم',
+    'user-uid': 'UID المستخدم (مطلوب)',
+    'display-name': 'اسم العرض (اختياري)',
+    'ban-reason': 'سبب الحظر (مثال: الرسائل المزعجة)',
+    'privacy-policy': 'سياسة الخصوصية',
+    'terms-of-service': 'شروط الخدمة',
+    'contact-support': 'اتصل بالدعم',
+    'about-us': 'من نحن',
+    'about-desc': 'IsItAScam هي منصة مجتمعية مخصصة لتحديد والإبلاغ عن عمليات الاحتيال عبر الإنترنت. مهمتنا هي خلق بيئة رقمية أكثر أماناً من خلال مشاركة تجارب المستخدمين الحقيقية.',
+    'about-us-title': 'من نحن',
+    'report': 'إبلاغ',
+    'banned': 'محظور',
+    'privacy-policy-title': 'سياسة الخصوصية',
+    'terms-of-service-title': 'شروط الخدمة',
+    'profile-tab': 'الملف الشخصي',
+    'activity-tab': 'النشاط',
+    'rate-link-placeholder': 'الرابط / اسم المستخدم / رقم الهاتف...',
+    'scam-link-placeholder': 'الرابط / اسم المستخدم / رقم الهاتف...',
+    'rate-good-placeholder': 'ما كان جيداً؟ (مثال: توصيل سريع)',
+    'rate-bad-placeholder': 'ما كان سيئاً؟ (مثال: التغليف)',
+    'scammer-name-placeholder': 'اسم العرض (مثال: اسم المتجر)',
+    'scammer-desc-placeholder': 'صف ما حدث...',
+    'upload-proof': 'رفع الدليل (اختياري)',
+    'login-title': 'تسجيل الدخول',
+    'login-subtitle': 'سجل الدخول لإرسال وتتبع التقارير.',
+    'continue-with-google': 'المتابعة مع جوجل',
+    'firebase-note': 'مصادقة Firebase نشطة.',
+    'cancel-deletion': 'إلغاء',
+    'make-contribution': 'قدم مساهمة',
+    'contribution-desc': 'ساعد المجتمع من خلال الإبلاغ عن عملية احتيال أو تقييم بائع موثوق.',
+    'report-a-scam': 'الإبلاغ عن احتيال',
+    'seller-analysis': 'تحليل البائع',
+    'insufficient-data': 'بيانات غير كافية للتحليل المتقدم بالذكاء الاصطناعي.',
+    'critical-threat': '🚨 تم اكتشاف تهديد حرج: التحليل المتقدم حدد نمط احتيال عالي السرعة ({count} تقارير في 30 يومًا). الملف الشخصي يظهر سلوكًا متسقًا مع العمليات الاحتيالية. لا تتفاعل.',
+    'risk-advisory': '⚠ تحذير المخاطر: التحليل التاريخي وجد {count} تقارير احتيال مؤكدة. على الرغم من أن النشاط الحالي أقل، الحساب لديه تاريخ ثقة compromised. تقدم بحذر شديد.',
+    'inconclusive-analysis': 'التحليل النصي المفصل كان غير حاسم بسبب المراجعات القصيرة.',
+    'login-to-report': 'يجب أن تكون مسجلاً للدخول للإبلاغ عن عملية احتيال.',
+    'login-to-report-content': 'يرجى تسجيل الدخول للإبلاغ عن المحتوى.',
+    'my-activity': 'نشاطي',
+    'my-reports': 'تقاريري',
+    'my-ratings': 'تقييماتي',
+    'select-rating': 'اختر التقييم',
+    'help-community': 'ساعد المجتمع على البقاء آمناً من خلال الإبلاغ عن الأنشطة المشبوهة.',
+    'results-disclaimer': 'النتائج مبنية على تقارير المجتمع والبيانات العامة.',
+    'rate': 'تقييم',
+    'share': 'مشاركة',
+    'edit': 'تعديل',
+    'delete': 'حذف',
+    'trusted': 'موثوق',
+    'scam': 'احتيال',
+    'ai-summary-title': 'ملخص الذكاء الاصطناعي',
+    'ai-elite': '<strong>حالة النخبة:</strong> هذا الملف الشخصي يحافظ على تقييم شبه مثالي {score}/5.',
+    'ai-trusted': '<strong>بائع موثوق:</strong> التحليل يظهر ردود فعل إيجابية بشكل عام ({score}/5).',
+    'ai-mixed': '<strong>سمعة مختلطة:</strong> ردود الفعل غير متسقة ({score}/5).',
+    'ai-poor': '<strong>وضع ضعيف:</strong> رضا المستخدم منخفض ({score}/5).',
+    'ai-high-risk': '<strong>مخاطرة عالية:</strong> تم اكتشاف ردود فعل سلبية للغاية ({score}/5).',
+    'ai-flagged-failures': 'حدد محرك الذكاء الاصطناعي إخفاقات حرجة في <strong>{0}</strong>.',
+    'ai-flagged-failures-2': 'حدد محرك الذكاء الاصطناعي إخفاقات حرجة في <strong>{0}</strong> و <strong>{1}</strong>.',
+    'ai-positive-negligible': 'ردود الفعل الإيجابية ضئيلة أو مشبوهة.',
+    'ai-complaints-generic': 'تم تحليل شكاوى متعددة بخصوص الخدمة والتسليم.',
+    'ai-praise': 'المشترون يثنون باستمرار على <strong>{0}</strong>.',
+    'ai-praise-2': 'المشترون يثنون باستمرار على <strong>{0}</strong> و <strong>{1}</strong>.',
+    'ai-minor-issues': 'ومع ذلك، أبلغت أقلية من المستخدمين عن مشاكل مع <strong>{0}</strong>.',
+    'ai-no-issues': 'لم يتم العثور على مشاكل متكررة كبيرة.',
+    'ai-mixed-good-bad': 'بينما <strong>{0}</strong> نقطة قوة، هناك مخاوف مستمرة بشأن <strong>{1}</strong>.',
+    'ai-mixed-good': '<strong>{0}</strong> نقطة مضيئة، لكن الاتساق العام يختلف.',
+    'ai-mixed-bad': '<strong>{0}</strong> نقطة ألم رئيسية للمشترين.',
+    'ai-trend-up': 'اتجاه صاعد 📈.',
+    'ai-trend-down': 'اتجاه هابط 📉.',
+    'ai-historical': '<strong>⚠ ملاحظة:</strong> هذا الملف لديه {count} تقرير تاريخي، لكن السمعة الأخيرة إيجابية بشكل عام.',
+    'verified-alert': '⚠ تنبيه مصدر موثوق: قام أعضاء موثوقون بالإبلاغ عن هذا الملف الشخصي.',
+    'verified-endorsement': '✓ تأييد موثوق: قام أعضاء موثوقون بتزكية هذا البائع.',
+    'welcome': 'مرحباً،',
+    'logged-in-msg': 'أنت مسجل الدخول حالياً.',
+    'logout': 'تسجيل الخروج',
+    'open-admin': 'فتح لوحة التحكم',
+    'reports-count-label': 'تقارير',
+    'visit-profile': 'زيارة الملف الشخصي ↗',
+    'avg-from-ratings': 'متوسط من {count} تقييمات',
+    'status-no-info': 'معلومات غير كافية',
+    'status-trusted': 'عمل موثوق',
+    'status-low-risk': 'مخاطرة منخفضة',
+    'status-potential-risk': 'مخاطرة محتملة',
+    'status-high-risk': 'مخاطرة عالية',
+    'stat-trust-score': 'نقاط الثقة',
+    'stat-reports': 'تقارير',
+    'stat-ratings': 'تقييمات',
+    'view-history': 'عرض السجل الكامل',
+    'hide-history': 'إخفاء السجل'
+  },
+  tn: {
+    'nav-home': 'الصفحة الرئيسية',
+    'nav-login': 'دخول',
+    'hero-title': 'قبل ما تشري، سول سؤال وحد',
+    'hero-subtitle': 'واش هي نصابة؟',
+    'search-placeholder': 'الموقع، اسم المستخدم، رقم الهاتف...',
+    'search-results': 'نتايج البحث',
+    'community-reports': 'تقارير المجتمع',
+    'seller-ratings': 'تقييمات البائعين',
+    'trending': '🔥 الشائع',
+    'most-recent': '🕒 الجدد',
+    'highest-risk': '⚠️ أكبر خطر',
+    'load-more': 'حمل أكثر',
+    'notifications': 'الإشعارات',
+    'rate-seller': 'قيم البائع',
+    'report-scam': 'بلغ عن نصابة',
+    'submit-rating': 'بعث التقييم',
+    'submit-report': 'بعث التقرير',
+    'trust-score': 'نقاط الثقة',
+    'paid-no-delivery': 'دفع، ما وصلتش',
+    'user-paid-d17': 'المستخدم دفع ب D17 و تبلغع.',
+    'rate-or-report': 'قيم ولا بلغ',
+    'admin-dashboard': 'لوحة التحكم',
+    'manage-verified': 'تصرف في الأعضاء الموثوقين.',
+    'search-name-uid': 'بحث بالاسم ولا UID...',
+    'add-seller': 'زيد بائع',
+    'verified-users': 'المستخدمين الموثوقين',
+    'banned-users': 'المستخدمين المحظورين',
+    'add-seller-profile': 'زيد ملف بائع ف قاعدة البيانات',
+    'add-seller-desc': 'زيد بائع ما يلزموش تقارير ولا تقييمات. خلي نقاط ثقة أولية.',
+    'manually-verify': 'تحقق من المستخدم يدوياً',
+    'grant-verification': 'منح التحقق',
+    'manually-ban': 'حظر المستخدم يدوياً',
+    'ban-user': 'حظر المستخدم',
+    'user-uid': 'UID المستخدم (ضروري)',
+    'display-name': 'اسم العرض (اختياري)',
+    'ban-reason': 'سبب الحظر (مثال: سبام)',
+    'privacy-policy': 'سياسة الخصوصية',
+    'terms-of-service': 'شروط الخدمة',
+    'contact-support': 'اتصل بالدعم',
+    'about-us': 'عنينا',
+    'about-desc': 'IsItAScam هي منصة مجتمعية مخصصة لتحديد والتبليغ عن النصابات عبر الإنترنت. مهمتنا هي خلق بيئة رقمية أكثر أماناً من خلال مشاركة تجارب المستخدمين الحقيقية.',
+    'my-activity': 'نشاطي',
+    'my-reports': 'تقاريري',
+    'my-ratings': 'تقييماتي',
+    'select-rating': 'اختر التقييم',
+    'help-community': 'ساعد المجتمع يبقى آمن بالتبليغ على الأنشطة المشبوهة.',
+    'rate': 'قيم',
+    'share': 'بارتاجي',
+    'edit': 'بدل',
+    'delete': 'فسخ',
+    'trusted': 'ثيقة',
+    'scam': 'قلبة',
+    'ai-summary-title': 'ملخص IA',
+    'ai-elite': '<strong>نخبة:</strong> البروفيل هذا عندو تقييم طيارة {score}/5.',
+    'ai-trusted': '<strong>بائع ثيقة:</strong> التحليل يوري اللي الناس فرحانة ({score}/5).',
+    'ai-mixed': '<strong>نص نص:</strong> التقييمات مخلطة ({score}/5).',
+    'ai-poor': '<strong>حالة حليلة:</strong> الناس موش عاجبها ({score}/5).',
+    'ai-high-risk': '<strong>خطر كبير:</strong> فما برشا كلام خايب ({score}/5).',
+    'ai-flagged-failures': 'الذكاء الاصطناعي لقى مشاكل كبيرة في <strong>{0}</strong>.',
+    'ai-flagged-failures-2': 'الذكاء الاصطناعي لقى مشاكل كبيرة في <strong>{0}</strong> و <strong>{1}</strong>.',
+    'ai-positive-negligible': 'الكلام الباهي شوية ولا مشكوك فيه.',
+    'ai-complaints-generic': 'فما برشا تشكيات على الخدمة والتوصيل.',
+    'ai-praise': 'المشترين ديما يشكرو في <strong>{0}</strong>.',
+    'ai-praise-2': 'المشترين ديما يشكرو في <strong>{0}</strong> و <strong>{1}</strong>.',
+    'ai-minor-issues': 'أما فما شوية عباد تشكاو من <strong>{0}</strong>.',
+    'ai-no-issues': 'ما فماش مشاكل كبيرة تتعاود.',
+    'ai-mixed-good-bad': 'صحيح <strong>{0}</strong> باهي، أما فما مشاكل في <strong>{1}</strong>.',
+    'ai-mixed-good': '<strong>{0}</strong> حاجة باهية، أما الباقي يختلف.',
+    'ai-mixed-bad': '<strong>{0}</strong> هي المشكلة الكبيرة عند الشراية.',
+    'ai-trend-up': 'طالع 📈.',
+    'ai-trend-down': 'هابط 📉.',
+    'ai-historical': '<strong>⚠ رد بالك:</strong> البروفيل هذا عندو {count} تقارير قديمة، أما توا تحسن.',
+    'report': 'بلغ',
+    'banned': 'مبلكي',
+    'verified-alert': '⚠ رد بالك: أعضاء ثيقة بلغوا على البروفيل هذا.',
+    'verified-endorsement': '✓ جوك باهي: أعضاء ثيقة شكروا البائع هذا.',
+    'welcome': 'مرحباً،',
+    'logged-in-msg': 'راك مكونكتي.',
+    'logout': 'اخرج',
+    'open-admin': 'حل لوحة التحكم',
+    'reports-count-label': 'تقارير',
+    'visit-profile': 'شوف البروفيل ↗',
+    'avg-from-ratings': 'معدل من {count} تقييمات',
+    'status-no-info': 'معلومات ناقصة',
+    'status-trusted': 'خدام ثيقة',
+    'status-low-risk': 'خطر ضعيف',
+    'status-potential-risk': 'ينجم يكون خطر',
+    'status-high-risk': 'خطر كبير',
+    'stat-trust-score': 'نقاط الثقة',
+    'stat-reports': 'تقارير',
+    'stat-ratings': 'تقييمات',
+    'view-history': 'شوف السجل الكامل',
+    'hide-history': 'خبي السجل'
+  }
+};
+
+let currentLanguage = localStorage.getItem('selectedLanguage') || 'en';
+
+function changeLanguage(lang) {
+  console.log('Changing language to:', lang); // Debug log
+  
+  if (currentLanguage !== lang) {
+    localStorage.setItem('selectedLanguage', lang);
+    location.reload();
+    return;
+  }
+
+  currentLanguage = lang;
+  localStorage.setItem('selectedLanguage', lang);
+  
+  // Update current language display
+  const languageNames = {
+    'en': 'English',
+    'fr': 'Français', 
+    'ar': 'العربية',
+    'tn': 'تونسي'
+  };
+  document.getElementById('current-language').textContent = languageNames[lang];
+  
+  // Set language attribute only - DO NOT set dir to prevent layout shifts
+  document.documentElement.setAttribute('lang', lang);
+  
+  // Update all translatable elements
+  updateTranslations();
+  
+  // Close dropdown
+  document.getElementById('language-dropdown').classList.add('hidden');
+}
+
+function updateTranslations() {
+  document.querySelectorAll('[data-translate]').forEach(element => {
+    const key = element.getAttribute('data-translate');
+    if (translations[currentLanguage][key]) {
+      element.textContent = translations[currentLanguage][key];
+    }
+  });
+  
+  // Update placeholders
+  document.querySelectorAll('[data-translate-placeholder]').forEach(element => {
+    const key = element.getAttribute('data-translate-placeholder');
+    if (translations[currentLanguage][key]) {
+      element.placeholder = translations[currentLanguage][key];
+    }
+  });
+  
+  // Update select options
+  document.querySelectorAll('option[data-translate]').forEach(element => {
+    const key = element.getAttribute('data-translate');
+    if (translations[currentLanguage][key]) {
+      element.textContent = translations[currentLanguage][key];
+    }
+  });
+}
+
+function toggleLanguageDropdown() {
+  console.log('Toggling language dropdown'); // Debug log
+  const dropdown = document.getElementById('language-dropdown');
+  if (dropdown) {
+    dropdown.classList.toggle('hidden');
+    console.log('Dropdown classes after toggle:', dropdown.className); // Debug log
+  } else {
+    console.error('Language dropdown not found!');
+  }
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+  const selector = document.querySelector('.language-selector');
+  if (!selector.contains(event.target)) {
+    document.getElementById('language-dropdown').classList.add('hidden');
+  }
+});
+
+// Initialize language on page load
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('DOM Content Loaded - Initializing language system'); // Debug log
+  changeLanguage(currentLanguage);
+  
+  // Test if elements exist
+  const langDropdown = document.getElementById('language-dropdown');
+  const langBtn = document.querySelector('.language-btn');
+  console.log('Language dropdown element:', langDropdown);
+  console.log('Language button element:', langBtn);
+  
+  // Add click listeners manually as backup
+  if (langBtn) {
+    langBtn.addEventListener('click', function(e) {
+      console.log('Language button clicked via addEventListener'); // Debug log
+      e.preventDefault();
+      e.stopPropagation();
+      toggleLanguageDropdown();
+    });
+  }
+  
+  // Add language option listeners manually
+  document.querySelectorAll('.language-option').forEach((btn, index) => {
+    const lang = ['en', 'fr', 'ar', 'tn'][index];
+    console.log(`Adding listener to ${lang} button`); // Debug log
+    btn.addEventListener('click', function(e) {
+      console.log(`${lang} button clicked via addEventListener`); // Debug log
+      e.preventDefault();
+      e.stopPropagation();
+      changeLanguage(lang);
+    });
+  });
+});
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, deleteDoc, doc, onSnapshot, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -130,7 +707,7 @@ function showPage(page, defaultTab = 'profile', activitySubTab = 'reports') {
   }
 
   if (page === 'report' && !auth.currentUser) {
-    showToast("You must be logged in to report a scam.", "error");
+    showToast(translations[currentLanguage]['login-to-report'] || "You must be logged in to report a scam.", "error");
     showPage('login');
     return;
   }
@@ -326,6 +903,11 @@ onAuthStateChanged(auth, (user) => {
   const activitySection = document.getElementById('user-activity-section');
   const profileTabs = document.getElementById('profile-tabs');
 
+  // Prevent updateTranslations from overwriting HTML structure with text
+  if (navLogin.hasAttribute('data-translate')) {
+      navLogin.removeAttribute('data-translate');
+  }
+
   if (user) {
     // User is signed in: Show profile pic in navbar
     navLogin.innerHTML = `<img src="${user.photoURL}" alt="Profile" style="width:32px; height:32px; border-radius:50%; object-fit:cover; border: 2px solid var(--accent-primary); display:block;">`;
@@ -334,15 +916,15 @@ onAuthStateChanged(auth, (user) => {
     // Update Login Page UI to show Logout option
     if (authContainer) {
       authContainer.innerHTML = `
-        <h1>Welcome, ${user.displayName.split(' ')[0]}</h1>
+        <h1>${translations[currentLanguage]['welcome'] || 'Welcome,'} ${user.displayName.split(' ')[0]}</h1>
         <img src="${user.photoURL}" style="width:80px; height:80px; border-radius:50%; margin: 20px 0;">
-        <p>You are currently logged in.</p>
-        <button class="google-btn" onclick="logout()" style="background: #ff4d4d; color: white;">Logout</button>
+        <p data-translate="logged-in-msg">${translations[currentLanguage]['logged-in-msg'] || 'You are currently logged in.'}</p>
+        <button class="google-btn" onclick="logout()" style="background: #ff4d4d; color: white;"><span data-translate="logout">${translations[currentLanguage]['logout'] || 'Logout'}</span></button>
       `;
       
       // Admin Dashboard Button
       if (user.uid === ADMIN_UID) {
-          authContainer.innerHTML += `<button onclick="showPage('admin-dashboard')" class="visit-btn" style="width:100%; margin-top:10px; background:linear-gradient(135deg, #6d28d9, #9333ea); border:none; color:white;">Open Admin Dashboard</button>`;
+          authContainer.innerHTML += `<button onclick="showPage('admin-dashboard')" class="visit-btn" style="width:100%; margin-top:10px; background:linear-gradient(135deg, #6d28d9, #9333ea); border:none; color:white;" data-translate="open-admin">${translations[currentLanguage]['open-admin'] || 'Open Admin Dashboard'}</button>`;
       }
     }
 
@@ -353,18 +935,18 @@ onAuthStateChanged(auth, (user) => {
     renderActivity();
   } else {
     // User is signed out: Show "Login" button
-    navLogin.innerHTML = `<svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;"><path d="M11 7L9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5-5-5zm9 12h-8v2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-8v2h8v14z"></path></svg> <span>Login</span>`;
+    navLogin.innerHTML = `<svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;"><path d="M11 7L9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5-5-5zm9 12h-8v2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-8v2h8v14z"></path></svg> <span data-translate="nav-login">${translations[currentLanguage]['nav-login'] || 'Login'}</span>`;
     navLogin.classList.add('nav-login-btn');
     
     if (authContainer) {
       authContainer.innerHTML = `
-        <h1>Login</h1>
-        <p>Sign in to submit and track reports.</p>
+        <h1 data-translate="login-title">${translations[currentLanguage]['login-title'] || 'Login'}</h1>
+        <p data-translate="login-subtitle">${translations[currentLanguage]['login-subtitle'] || 'Sign in to submit and track reports.'}</p>
         <button class="google-btn" onclick="googleLogin()">
             <svg viewBox="0 0 24 24" style="width:20px; height:20px;"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/><path d="M1 1h22v22H1z" fill="none"/></svg>
-            Continue with Google
+            <span data-translate="continue-with-google">${translations[currentLanguage]['continue-with-google'] || 'Continue with Google'}</span>
         </button>
-        <small style="opacity:0.6;">Firebase authentication is active.</small>
+        <small style="opacity:0.6;" data-translate="firebase-note">${translations[currentLanguage]['firebase-note'] || 'Firebase authentication is active.'}</small>
       `;
     }
 
@@ -631,9 +1213,19 @@ async function initCountryFilter() {
             const data = await res.json();
             if (data.country_code) {
                 const userIso = data.country_code.toLowerCase();
+                
+                // Set Country Filter
                 if (countryCodes.some(c => c.iso === userIso)) {
                     select.value = userIso;
                     performSearch(); // Refresh with local filter
+                }
+
+                // Auto-set Language for MENA (if no preference)
+                if (!localStorage.getItem('selectedLanguage')) {
+                    const menaCountries = ['dz', 'bh', 'eg', 'iq', 'jo', 'kw', 'lb', 'ly', 'ma', 'om', 'ps', 'qa', 'sa', 'sd', 'sy', 'tn', 'ae', 'ye'];
+                    if (menaCountries.includes(userIso)) {
+                        changeLanguage('ar');
+                    }
                 }
             }
         } catch (e) {
@@ -2291,12 +2883,12 @@ function getTrustStatus(score, reportCount = 0, ratingCount = 0) {
     // If no scam reports and score is in the neutral range (50-59), it means they have some positive ratings
     // but not enough to break into "Low Risk" (60+), or just started.
     if (reportCount === 0 && score >= 50 && score < 60) {
-        return { color: '#9ca3af', text: 'Not Enough Info' };
+        return { color: '#9ca3af', textKey: 'status-no-info' };
     }
-    if (score >= 80) return { color: '#00e676', text: 'Trusted Business' };
-    if (score >= 60) return { color: '#2979ff', text: 'Low Risk' };
-    if (score >= 30) return { color: '#ffaa00', text: 'Potential Risk' };
-    return { color: '#ff3d00', text: 'High Risk' };
+    if (score >= 80) return { color: '#00e676', textKey: 'status-trusted' };
+    if (score >= 60) return { color: '#2979ff', textKey: 'status-low-risk' };
+    if (score >= 30) return { color: '#ffaa00', textKey: 'status-potential-risk' };
+    return { color: '#ff3d00', textKey: 'status-high-risk' };
 }
 
 // PAGINATION STATE
@@ -2476,7 +3068,8 @@ function renderReportBatch(reset = false) {
     
     // Calculate Dynamic Risk Status
     // Use pre-calculated score and ratings
-    const status = getTrustStatus(group.score, group.reports.length, group.relatedRatings.length);
+    const statusInfo = getTrustStatus(group.score, group.reports.length, group.relatedRatings.length);
+    const statusText = translations[currentLanguage][statusInfo.textKey] || statusInfo.textKey;
 
     const card = document.createElement('div');
 
@@ -2507,11 +3100,11 @@ function renderReportBatch(reset = false) {
                        <span style="max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${platform.name}</span>
                    </div>
                    <div style="display:flex; align-items:center; gap:8px;">
-                       <button onclick="event.stopPropagation(); shareItem('${escapeHTML(group.url)}', '${escapeHTML(finalDisplayName)}', '${status.text}')" style="background:none; border:none; color:#8b949e; cursor:pointer; padding:0;" title="Share">
+                       <button onclick="event.stopPropagation(); shareItem('${escapeHTML(group.url)}', '${escapeHTML(finalDisplayName)}', '${statusText}')" style="background:none; border:none; color:#8b949e; cursor:pointer; padding:0;" title="${translations[currentLanguage]['share'] || 'Share'}">
                            <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
                        </button>
-                       <div class="warning-label" style="color:${status.color}; font-size:0.75em; margin:0; background:${status.color}15;">
-                           ${status.text}
+                       <div class="warning-label" style="color:${statusInfo.color}; font-size:0.75em; margin:0; background:${statusInfo.color}15;">
+                           ${statusText}
                        </div>
                    </div>
                </div>
@@ -2534,14 +3127,14 @@ function renderReportBatch(reset = false) {
                     <div class="location-badge">${flagDisplay}${platform.name}</div>
                 </div>
             </div>
-            <button onclick="event.stopPropagation(); shareItem('${escapeHTML(group.url)}', '${escapeHTML(username)}', '${status.text}')" style="background:none; border:none; color:#8b949e; cursor:pointer; padding:4px;" title="Share">
+            <button onclick="event.stopPropagation(); shareItem('${escapeHTML(group.url)}', '${escapeHTML(username)}', '${statusText}')" style="background:none; border:none; color:#8b949e; cursor:pointer; padding:4px;" title="${translations[currentLanguage]['share'] || 'Share'}">
                 <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor;"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
             </button>
           </div>
             <div class="known-as" style="margin-top:5px;">Reported as: <strong style="color:#f0f6fc;">${escapeHTML(mostCommonName)}</strong></div>
-          <div class="warning-label" style="color:${status.color}; margin-top:auto; background:${status.color}15;">
-            <span style="width:8px; height:8px; background:${status.color}; border-radius:50%; display:inline-block; margin-right:6px; box-shadow:0 0 5px ${status.color};"></span>
-            ${status.text}
+          <div class="warning-label" style="color:${statusInfo.color}; margin-top:auto; background:${statusInfo.color}15;">
+            <span style="width:8px; height:8px; background:${statusInfo.color}; border-radius:50%; display:inline-block; margin-right:6px; box-shadow:0 0 5px ${statusInfo.color};"></span>
+            ${statusText}
           </div>
         `;
     } else {
@@ -2552,15 +3145,15 @@ function renderReportBatch(reset = false) {
             <div class="platform-icon" style="background:${platform.color}">${platform.icon}</div>
             <div class="card-user" style="word-break: break-word;">${finalDisplayName}</div>
           </div>
-          <div class="known-as">Profile: <strong>${escapeHTML(username)}</strong> (${group.names.length} reports)</div>
+          <div class="known-as">Profile: <strong>${escapeHTML(username)}</strong> (${group.names.length} ${translations[currentLanguage]['reports-count-label'] || 'reports'})</div>
           ${displayImage ? `<img src="${displayImage}" style="border-radius:16px; margin-top:12px;">` : ''}
-          <div class="warning-label" style="color:${status.color}; background:${status.color}15;">
-            <span style="width:8px; height:8px; background:${status.color}; border-radius:50%; display:inline-block; margin-right:6px; box-shadow:0 0 5px ${status.color};"></span>
-            ${status.text}
+          <div class="warning-label" style="color:${statusInfo.color}; background:${statusInfo.color}15;">
+            <span style="width:8px; height:8px; background:${statusInfo.color}; border-radius:50%; display:inline-block; margin-right:6px; box-shadow:0 0 5px ${statusInfo.color};"></span>
+            ${statusText}
           </div>
           <div style="display:flex; gap:10px; margin-top:10px;">
-            <a href="${group.url.startsWith('http') ? group.url : 'https://' + group.url}" onclick="interceptLink(event, this.href, '${status.text}')" class="visit-btn" style="flex:1; margin-top:0;">Visit Profile ↗</a>
-            <button onclick="event.stopPropagation(); shareItem('${escapeHTML(group.url)}', '${escapeHTML(finalDisplayName)}', '${status.text}')" class="visit-btn" style="width:auto; margin-top:0; padding:0 16px; display:flex; align-items:center; justify-content:center;" title="Share">
+            <a href="${group.url.startsWith('http') ? group.url : 'https://' + group.url}" onclick="interceptLink(event, this.href, '${statusText}')" class="visit-btn" style="flex:1; margin-top:0;">${translations[currentLanguage]['visit-profile'] || 'Visit Profile ↗'}</a>
+            <button onclick="event.stopPropagation(); shareItem('${escapeHTML(group.url)}', '${escapeHTML(finalDisplayName)}', '${statusText}')" class="visit-btn" style="width:auto; margin-top:0; padding:0 16px; display:flex; align-items:center; justify-content:center;" title="${translations[currentLanguage]['share'] || 'Share'}">
                 <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor;"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
             </button>
           </div>
@@ -2763,7 +3356,8 @@ async function renderRatings(searchQuery = "", sortType = "trending", countryFil
       const displayTitle = escapeHTML(enrichedName || username);
 
       // Calculate Dynamic Risk Status
-      const status = getTrustStatus(group.score, group.relatedReports.length, group.rawRatings.length);
+      const statusInfo = getTrustStatus(group.score, group.relatedReports.length, group.rawRatings.length);
+      const statusText = translations[currentLanguage][statusInfo.textKey] || statusInfo.textKey;
 
       const card = document.createElement('div');
 
@@ -2793,8 +3387,8 @@ async function renderRatings(searchQuery = "", sortType = "trending", countryFil
                          <div style="width:16px; height:16px;">${platform.icon}</div>
                          <span style="max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${platform.name}</span>
                      </div>
-                     <div class="warning-label" style="color:${status.color}; font-size:0.75em; margin:0; background:${status.color}15;">
-                         ${status.text}
+                     <div class="warning-label" style="color:${statusInfo.color}; font-size:0.75em; margin:0; background:${statusInfo.color}15;">
+                         ${statusText}
                      </div>
                  </div>
              </div>
@@ -2815,24 +3409,25 @@ async function renderRatings(searchQuery = "", sortType = "trending", countryFil
                   </div>
               </div>
               <div class="known-as" style="font-size: 1.2em; color: #ffaa00; margin-top:10px;">${stars}</div>
-              <div class="warning-label" style="color:${status.color}; margin-top:auto; background:${status.color}15;">
-                <span style="width:8px; height:8px; background:${status.color}; border-radius:50%; display:inline-block; margin-right:6px; box-shadow:0 0 5px ${status.color};"></span>
-                ${status.text}
+              <div class="warning-label" style="color:${statusInfo.color}; margin-top:auto; background:${statusInfo.color}15;">
+                <span style="width:8px; height:8px; background:${statusInfo.color}; border-radius:50%; display:inline-block; margin-right:6px; box-shadow:0 0 5px ${statusInfo.color};"></span>
+                ${statusText}
               </div>
           `;
       } else {
+          const avgRatingText = (translations[currentLanguage]['avg-from-ratings'] || 'avg. from {count} ratings').replace('{count}', group.ratings.length);
           card.className = 'mini-card';
           card.innerHTML = `
               <div class="card-header">
                   <div class="platform-icon" style="background:${platform.color}">${platform.icon}</div>
                   <div class="card-user" style="word-break: break-word;">${displayTitle}</div>
               </div>
-              <div class="known-as" style="font-size: 1.2em; color: #ffaa00;">${stars} <span style="font-size: 0.7em; color: #8b949e;">(${avgRating.toFixed(1)} avg. from ${group.ratings.length} ratings)</span></div>
-              <div class="warning-label" style="color:${status.color}; margin-top:8px; background:${status.color}15;">
-                <span style="width:8px; height:8px; background:${status.color}; border-radius:50%; display:inline-block; margin-right:6px; box-shadow:0 0 5px ${status.color};"></span>
-                ${status.text}
+              <div class="known-as" style="font-size: 1.2em; color: #ffaa00;">${stars} <span style="font-size: 0.7em; color: #8b949e;">(${avgRating.toFixed(1)} ${avgRatingText})</span></div>
+              <div class="warning-label" style="color:${statusInfo.color}; margin-top:8px; background:${statusInfo.color}15;">
+                <span style="width:8px; height:8px; background:${statusInfo.color}; border-radius:50%; display:inline-block; margin-right:6px; box-shadow:0 0 5px ${statusInfo.color};"></span>
+                ${statusText}
               </div>
-              <a href="${group.url.startsWith('http') ? group.url : 'https://' + group.url}" onclick="interceptLink(event, this.href, '${status.text}')" class="visit-btn">Visit Profile ↗</a>
+              <a href="${group.url.startsWith('http') ? group.url : 'https://' + group.url}" onclick="interceptLink(event, this.href, '${statusText}')" class="visit-btn">${translations[currentLanguage]['visit-profile'] || 'Visit Profile ↗'}</a>
           `;
       }
 
@@ -3034,7 +3629,7 @@ async function populateDetailsView(url, type, highlightId = null) {
     </div>
   `;
 
-  title.innerText = 'Seller Analysis';
+  title.innerText = translations[currentLanguage]['seller-analysis'] || 'Seller Analysis';
 
   const targetKey = url.toLowerCase().replace(/\/$/, '');
 
@@ -3187,9 +3782,9 @@ async function populateDetailsView(url, type, highlightId = null) {
     }
 
     // Determine Status Color
-    const status = getTrustStatus(currentScore, reportCount, ratingCount);
-    const statusColor = status.color;
-    const statusText = status.text;
+    const statusInfo = getTrustStatus(currentScore, reportCount, ratingCount);
+    const statusColor = statusInfo.color;
+    const statusText = translations[currentLanguage][statusInfo.textKey] || statusInfo.textKey;
 
     // Update Background to Trust Color
     if (!document.getElementById('details-view').classList.contains('hidden')) {
@@ -3261,32 +3856,32 @@ async function populateDetailsView(url, type, highlightId = null) {
         <div class="details-header-buttons" style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
              <button onclick="rateLinkFromModal(decodeURIComponent(&quot;${encodeURIComponent(url)}&quot;))" style="background:rgba(255, 170, 0, 0.1); border:1px solid rgba(255, 170, 0, 0.3); color:#ffaa00; padding:8px 16px; border-radius:12px; font-size:0.85rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s; flex: 1; justify-content: center; min-width: 100px; max-width: 140px;">
                 <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor; transform:translateY(-1px);"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-                Rate
+                ${translations[currentLanguage]['rate'] || 'Rate'}
             </button>
              <button onclick="reportLinkFromModal(decodeURIComponent(&quot;${encodeURIComponent(url)}&quot;))" style="background:rgba(255, 77, 77, 0.1); border:1px solid rgba(255, 77, 77, 0.3); color:#ff4d4d; padding:8px 16px; border-radius:12px; font-size:0.85rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s; flex: 1; justify-content: center; min-width: 100px; max-width: 140px;">
                 <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M15.73 3H8.27L3 8.27v7.46L8.27 21h7.46L21 15.73V8.27L15.73 3zM12 17.3c-.72 0-1.3-.58-1.3-1.3 0-.72.58-1.3 1.3-1.3.72 0 1.3.58 1.3 1.3 0 .72-.58 1.3-1.3 1.3zm1-4.3h-2V7h2v6z"/></svg>
-                Report
+                ${translations[currentLanguage]['report'] || 'Report'}
             </button>
              <button onclick="shareItem(decodeURIComponent(&quot;${encodeURIComponent(url)}&quot;), decodeURIComponent(&quot;${encodeURIComponent(enrichedName || username)}&quot;), '${statusText}')" style="background:rgba(139, 92, 246, 0.1); border:1px solid rgba(139, 92, 246, 0.3); color:#8b5cf6; padding:8px 16px; border-radius:12px; font-size:0.85rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s; flex: 1; justify-content: center; min-width: 80px; max-width: 100px;">
                 <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
-                Share
+                ${translations[currentLanguage]['share'] || 'Share'}
             </button>
             ${auth.currentUser?.uid === ADMIN_UID ? `
              <button onclick="openAdminEditModal('${escapeHTML(url)}', '${escapeHTML(enrichedName || username)}', '${escapeHTML(enrichedImage || '')}')" style="background:rgba(139, 92, 246, 0.2); border:1px solid #8b5cf6; color:#8b5cf6; padding:8px 16px; border-radius:12px; font-size:0.85rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s; flex: 1; justify-content: center; min-width: 100px; max-width: 120px;" title="Admin: Edit seller details">
                 <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
-                Edit
+                ${translations[currentLanguage]['edit'] || 'Edit'}
             </button>
              <button onclick="markSellerTrust('${escapeHTML(url)}', 'trusted')" style="background:rgba(0, 230, 118, 0.15); border:1px solid rgba(0, 230, 118, 0.4); color:#00e676; padding:8px 16px; border-radius:12px; font-size:0.85rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s; flex: 1; justify-content: center; min-width: 100px; max-width: 120px;" title="Admin: Mark as Trusted (+100)">
                 <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                Trusted
+                ${translations[currentLanguage]['trusted'] || 'Trusted'}
             </button>
              <button onclick="markSellerTrust('${escapeHTML(url)}', 'scam')" style="background:rgba(255, 77, 77, 0.15); border:1px solid rgba(255, 77, 77, 0.4); color:#ff4d4d; padding:8px 16px; border-radius:12px; font-size:0.85rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s; flex: 1; justify-content: center; min-width: 100px; max-width: 120px;" title="Admin: Mark as Scam (-100)">
                 <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
-                Scam
+                ${translations[currentLanguage]['scam'] || 'Scam'}
             </button>
              <button onclick="deleteSellerProfile('${escapeHTML(url)}', '${escapeHTML(enrichedName || username)}')" style="background:rgba(255, 77, 77, 0.2); border:1px solid #ff4d4d; color:#ff4d4d; padding:8px 16px; border-radius:12px; font-size:0.85rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s; flex: 1; justify-content: center; min-width: 100px; max-width: 120px;" title="Admin: Delete entire profile">
                 <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-                Delete
+                ${translations[currentLanguage]['delete'] || 'Delete'}
             </button>
             ` : ''}
         </div>
@@ -3303,15 +3898,15 @@ async function populateDetailsView(url, type, highlightId = null) {
         <div class="trust-stats">
           <div class="stat-item">
             <div class="stat-value" style="color:${statusColor}">${currentScore}</div>
-            <div class="stat-label">Trust Score</div>
+            <div class="stat-label">${translations[currentLanguage]['stat-trust-score'] || 'Trust Score'}</div>
           </div>
           <div class="stat-item">
             <div class="stat-value">${reportCount}</div>
-            <div class="stat-label">Reports</div>
+            <div class="stat-label">${translations[currentLanguage]['stat-reports'] || 'Reports'}</div>
           </div>
           <div class="stat-item">
             <div class="stat-value">${ratingCount}</div>
-            <div class="stat-label">Ratings</div>
+            <div class="stat-label">${translations[currentLanguage]['stat-ratings'] || 'Ratings'}</div>
           </div>
         </div>
         <div class="chart-wrapper">
@@ -3320,7 +3915,7 @@ async function populateDetailsView(url, type, highlightId = null) {
         
         <div class="ai-summary-box">
             <h3 style="margin: 0 0 8px 0; font-size: 0.95rem; color: #8b5cf6; display: flex; align-items: center; gap: 8px;">
-               <svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:currentColor;"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/><path d="M11.25 5h1.5v4.25L16 8l-2.25 4.5h-2.5L13.5 8 11.25 5z"/></svg> AI Review Summary
+               <svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:currentColor;"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/><path d="M11.25 5h1.5v4.25L16 8l-2.25 4.5h-2.5L13.5 8 11.25 5z"/></svg> ${translations[currentLanguage]['ai-summary-title'] || 'AI Review Summary'}
             </h3>
             <p style="margin: 0; font-size: 0.9rem; line-height: 1.5; color: #b0b8c3;">${aiSummary}</p>
         </div>
@@ -3332,7 +3927,7 @@ async function populateDetailsView(url, type, highlightId = null) {
             </span>
         </div>
         
-        <button id="expand-history-btn" class="expand-history-btn" onclick="toggleHistoryLog()">View Full History</button>
+        <button id="expand-history-btn" class="expand-history-btn" onclick="toggleHistoryLog()">${translations[currentLanguage]['view-history'] || 'View Full History'}</button>
         <div id="history-log-container" class="hidden history-log">
            ${historyLogHTML}
         </div>
@@ -4593,6 +5188,13 @@ function generateAISummary(items, verifiedUsers = new Set()) {
   const analysisWindow = items.slice(-100);
   const ratings = analysisWindow.filter(i => i.type === 'rating');
   const reports = analysisWindow.filter(i => i.type === 'report');
+
+  // Helper for localized strings
+  const t = (key, params = {}) => {
+      let str = translations[currentLanguage][key] || translations['en'][key] || '';
+      Object.keys(params).forEach(k => str = str.replace(`{${k}}`, params[k]));
+      return str;
+  };
   
   if (ratings.length === 0 && reports.length === 0) return "Insufficient data for advanced AI analysis.";
 
@@ -4631,6 +5233,13 @@ function generateAISummary(items, verifiedUsers = new Set()) {
               'soum', 'ghali', 'rkhis', 'flous', 'rajja3', 'ha9', 'mleyen', 'dinar', 'dafa3t', '5allast', '9alba', 'sra9'
           ] 
       }
+  };
+  
+  const aspectNames = {
+      en: { shipping: 'shipping', quality: 'quality', service: 'service', price: 'price' },
+      fr: { shipping: 'la livraison', quality: 'la qualité', service: 'le service', price: 'le prix' },
+      ar: { shipping: 'الشحن', quality: 'الجودة', service: 'الخدمة', price: 'السعر' },
+      tn: { shipping: 'التوصيل', quality: 'السلعة', service: 'السرفيس', price: 'السوم' }
   };
 
   // Helper: Normalize text (remove accents, lowercase)
@@ -4673,9 +5282,9 @@ function generateAISummary(items, verifiedUsers = new Set()) {
   let verifiedNote = "";
 
   if (verifiedReports.length > 0) {
-      verifiedNote = ` <span style="color:#ff4d4d; font-weight:bold;">⚠ Verified Source Alert:</span> Trusted community members have flagged this profile.`;
+      verifiedNote = ` <span style="color:#ff4d4d; font-weight:bold;">${t('verified-alert')}</span>`;
   } else if (verifiedRatings.length > 0 && avgStars >= 4.0) {
-      verifiedNote = ` <span style="color:#4dff88; font-weight:bold;">✓ Verified Endorsement:</span> Trusted members have vouched for this seller.`;
+      verifiedNote = ` <span style="color:#4dff88; font-weight:bold;">${t('verified-endorsement')}</span>`;
   }
 
 
@@ -4690,16 +5299,17 @@ function generateAISummary(items, verifiedUsers = new Set()) {
       if (!isResilient) {
           let msg = "";
           if (recentReports.length > 0) {
-              msg = `<strong>🚨 CRITICAL THREAT DETECTED:</strong> Advanced analysis identified a high-velocity scam pattern (${recentReports.length} reports in 30 days). The profile exhibits behavior consistent with fraudulent operations. <strong>Do not engage.</strong>`;
+              msg = translations[currentLanguage]['critical-threat'] || `<strong>🚨 CRITICAL THREAT DETECTED:</strong> Advanced analysis identified a high-velocity scam pattern (${recentReports.length} reports in 30 days). The profile exhibits behavior consistent with fraudulent operations. <strong>Do not engage.</strong>`;
           } else {
-              msg = `<strong>⚠ Risk Advisory:</strong> Historical analysis found ${reports.length} confirmed scam reports. Although recent activity is lower, the account has a compromised trust history. Proceed with extreme caution.`;
+              msg = translations[currentLanguage]['risk-advisory'] || `<strong>⚠ Risk Advisory:</strong> Historical analysis found ${reports.length} confirmed scam reports. Although recent activity is lower, the account has a compromised trust history. Proceed with extreme caution.`;
           }
 
           // If we have ratings data, append the CONS only (since it's high risk)
           if (ratings.length > 0) {
               const negatives = significantAspects.filter(([k, v]) => v.score < 0);
               if (negatives.length > 0) {
-                  msg += ` Additionally, users frequently cite issues with <strong>${negatives[0][0]}</strong>.`;
+                  const aspectName = aspectNames[currentLanguage][negatives[0][0]] || negatives[0][0];
+                  msg += ` ` + t('ai-minor-issues', { 0: aspectName });
               }
           }
           return msg + verifiedNote;
@@ -4745,24 +5355,29 @@ function generateAISummary(items, verifiedUsers = new Set()) {
   let summary = "";
 
   // A. Reputation Overview with Trend
-  if (avgStars >= 4.8) summary += `<strong>Elite Status:</strong> This profile maintains a near-perfect ${avgStars.toFixed(1)}/5 rating. `;
-  else if (avgStars >= 4.0) summary += `<strong>Trusted Seller:</strong> Analysis shows generally positive feedback (${avgStars.toFixed(1)}/5). `;
-  else if (avgStars >= 3.0) summary += `<strong>Mixed Reputation:</strong> Feedback is inconsistent (${avgStars.toFixed(1)}/5). `;
-  else if (avgStars >= 2.0) summary += `<strong>Poor Standing:</strong> User satisfaction is low (${avgStars.toFixed(1)}/5). `;
-  else summary += `<strong>High Risk:</strong> Extremely negative feedback detected (${avgStars.toFixed(1)}/5). `;
+  const scoreStr = avgStars.toFixed(1);
+  if (avgStars >= 4.8) summary += t('ai-elite', { score: scoreStr }) + ' ';
+  else if (avgStars >= 4.0) summary += t('ai-trusted', { score: scoreStr }) + ' ';
+  else if (avgStars >= 3.0) summary += t('ai-mixed', { score: scoreStr }) + ' ';
+  else if (avgStars >= 2.0) summary += t('ai-poor', { score: scoreStr }) + ' ';
+  else summary += t('ai-high-risk', { score: scoreStr }) + ' ';
 
   // B. Smart Pros/Cons Logic
   if (significantAspects.length > 0) {
+      const getAspectName = (key) => aspectNames[currentLanguage][key] || key;
       
       // HIGH RISK (Scam Rate High / Low Stars) -> Focus on Cons, suppress Pros
       if (avgStars < 3.0) {
           const negatives = significantAspects.filter(([k, v]) => v.score < 0);
           if (negatives.length > 0) {
-              summary += `The AI engine flagged critical failures in <strong>${negatives[0][0]}</strong>`;
-              if (negatives.length > 1) summary += ` and <strong>${negatives[1][0]}</strong>`;
-              summary += `. Positive feedback is negligible or suspicious.`;
+              if (negatives.length > 1) {
+                  summary += t('ai-flagged-failures-2', { 0: getAspectName(negatives[0][0]), 1: getAspectName(negatives[1][0]) });
+              } else {
+                  summary += t('ai-flagged-failures', { 0: getAspectName(negatives[0][0]) });
+              }
+              summary += ` ` + t('ai-positive-negligible');
           } else {
-              summary += `Multiple complaints analyzed regarding service and delivery.`;
+              summary += t('ai-complaints-generic');
           }
       }
       // TRUSTED (High Stars) -> Focus on Pros, only mention repeated Cons
@@ -4771,18 +5386,21 @@ function generateAISummary(items, verifiedUsers = new Set()) {
           const negatives = significantAspects.filter(([k, v]) => v.score < 0);
           
           if (positives.length > 0) {
-              summary += `Buyers consistently praise the <strong>${positives[0][0]}</strong>`;
-              if (positives.length > 1) summary += ` and <strong>${positives[1][0]}</strong>`;
-              summary += `. `;
+              if (positives.length > 1) {
+                  summary += t('ai-praise-2', { 0: getAspectName(positives[0][0]), 1: getAspectName(positives[1][0]) });
+              } else {
+                  summary += t('ai-praise', { 0: getAspectName(positives[0][0]) });
+              }
+              summary += ` `;
           }
           
           // Only mention cons if they are significant (repeated)
           // Threshold: score <= -2 (meaning at least 2 bad reviews or 1 very bad weighted)
           const seriousNegatives = negatives.filter(([k, v]) => v.score <= -2);
           if (seriousNegatives.length > 0) {
-              summary += `However, a minority of users reported issues with <strong>${seriousNegatives[0][0]}</strong>.`;
+              summary += t('ai-minor-issues', { 0: getAspectName(seriousNegatives[0][0]) });
           } else {
-              summary += `No significant recurring issues found.`;
+              summary += t('ai-no-issues');
           }
       }
       // MIXED/BALANCED (3.0 - 3.9) -> Show both if close
@@ -4791,33 +5409,33 @@ function generateAISummary(items, verifiedUsers = new Set()) {
           const topNegative = significantAspects.find(([k, v]) => v.score < 0);
           
           if (topPositive && topNegative) {
-              summary += `While <strong>${topPositive[0]}</strong> is a strength, there are persistent concerns regarding <strong>${topNegative[0]}</strong>.`;
+              summary += t('ai-mixed-good-bad', { 0: getAspectName(topPositive[0]), 1: getAspectName(topNegative[0]) });
           } else if (topPositive) {
-              summary += `<strong>${topPositive[0]}</strong> is a highlight, but overall consistency varies.`;
+              summary += t('ai-mixed-good', { 0: getAspectName(topPositive[0]) });
           } else if (topNegative) {
-              summary += `<strong>${topNegative[0]}</strong> is a primary pain point for buyers.`;
+              summary += t('ai-mixed-bad', { 0: getAspectName(topNegative[0]) });
           }
       }
   } else {
-      summary += "Detailed text analysis was inconclusive due to brief reviews.";
+      summary += translations[currentLanguage]['inconclusive-analysis'] || "Detailed text analysis was inconclusive due to brief reviews.";
   }
 
   // C. Trend Insight
   if (hasTrend) {
       if (trendSlope > 0.05) {
-          summary += ` <span style="color:#4dff88">Trending Up 📈.</span>`;
+          summary += ` <span style="color:#4dff88">${t('ai-trend-up')}</span>`;
       } else if (trendSlope < -0.05) {
           // Context Aware: Only flag "Trending Down" if recent performance is actually poor (< 4.0)
           // This prevents flagging a drop from 5.0 to 4.5 as a "negative trend"
           if (recentAvg < 4.0) {
-              summary += ` <span style="color:#ff4d4d">Trending Down 📉.</span>`;
+              summary += ` <span style="color:#ff4d4d">${t('ai-trend-down')}</span>`;
           }
       }
   }
 
   // D. Historical Report Note (if critical warning was skipped)
   if (reports.length > 0) {
-      summary += ` <span style="color:#ffaa00; display:block; margin-top:8px; font-size:0.9em;"><strong>⚠ Note:</strong> This profile has ${reports.length} historical report(s), but recent reputation is generally positive.</span>`;
+      summary += ` <span style="color:#ffaa00; display:block; margin-top:8px; font-size:0.9em;">${t('ai-historical', { count: reports.length })}</span>`;
   }
 
   return summary + verifiedNote;
@@ -4864,7 +5482,7 @@ function toggleHistoryLog() {
   if (log) {
     log.classList.toggle('hidden');
     if (btn) {
-        btn.innerText = log.classList.contains('hidden') ? 'View Full History' : 'Hide History';
+        btn.innerText = log.classList.contains('hidden') ? (translations[currentLanguage]['view-history'] || 'View Full History') : (translations[currentLanguage]['hide-history'] || 'Hide History');
     }
   }
 }
@@ -5099,7 +5717,7 @@ async function saveReportEdit(id) {
 /* REPORT ABUSE LOGIC */
 function reportAbuse(docId, type, reportedUid) {
     if (!auth.currentUser) {
-        showToast("Please login to report content.", "error");
+        showToast(translations[currentLanguage]['login-to-report-content'] || "Please login to report content.", "error");
         return;
     }
     
@@ -5608,7 +6226,7 @@ function loadNotifications() {
             if (reportSpan) {
                 reportSpan.innerHTML = `
                     <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-                    <span>Banned</span>
+                    <span>${translations[currentLanguage]['banned'] || 'Banned'}</span>
                 `;
             }
         }
@@ -5621,7 +6239,7 @@ function loadNotifications() {
             if (reportSpan) {
                 reportSpan.innerHTML = `
                     <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
-                    <span>Report</span>
+                    <span>${translations[currentLanguage]['report'] || 'Report'}</span>
                 `;
             }
         }
@@ -6309,17 +6927,17 @@ function openReportMenu(btn) {
         <div style="width:48px; height:48px; background:linear-gradient(135deg, #8b5cf6, #6d28d9); border-radius:12px; display:flex; align-items:center; justify-content:center; margin-bottom:5px; box-shadow:0 4px 12px rgba(139, 92, 246, 0.3);">
             <svg viewBox="0 0 24 24" style="width:24px; height:24px; fill:white;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
         </div>
-        <h2 style="margin:0; color:#f0f6fc; font-size:1.4rem; text-align:center;">Make a Contribution</h2>
-        <p style="color:#8b949e; text-align:center; margin:0 0 10px 0; font-size:0.95rem; line-height:1.5;">Help the community by reporting a scam or rating a trusted seller.</p>
+        <h2 style="margin:0; color:#f0f6fc; font-size:1.4rem; text-align:center;">${translations[currentLanguage]['make-contribution'] || 'Make a Contribution'}</h2>
+        <p style="color:#8b949e; text-align:center; margin:0 0 10px 0; font-size:0.95rem; line-height:1.5;">${translations[currentLanguage]['contribution-desc'] || 'Help the community by reporting a scam or rating a trusted seller.'}</p>
         
         <button onclick="handleMenuAction('scam')" class="menu-action-btn" style="width:100%; padding:16px; background:rgba(255, 77, 77, 0.1); border:1px solid rgba(255, 77, 77, 0.3); color:#ff4d4d; border-radius:16px; font-weight:bold; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:12px; transition:transform 0.1s;">
             <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor;"><path d="M15.73 3H8.27L3 8.27v7.46L8.27 21h7.46L21 15.73V8.27L15.73 3zM12 17.3c-.72 0-1.3-.58-1.3-1.3 0-.72.58-1.3 1.3-1.3.72 0 1.3.58 1.3 1.3 0 .72-.58 1.3-1.3 1.3zm1-4.3h-2V7h2v6z"/></svg>
-            Report a Scam
+            <span>${translations[currentLanguage]['report-a-scam'] || 'Report a Scam'}</span>
         </button>
         
         <button onclick="handleMenuAction('rate')" class="menu-action-btn" style="width:100%; padding:16px; background:rgba(255, 170, 0, 0.1); border:1px solid rgba(255, 170, 0, 0.3); color:#ffaa00; border-radius:16px; font-weight:bold; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:12px; transition:transform 0.1s;">
             <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor; transform:translateY(-1px);"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-            Rate a Seller
+            ${translations[currentLanguage]['rate-seller'] || 'Rate a Seller'}
         </button>
 
         <button onclick="closeReportMenu()" style="margin-top:5px; background:none; border:none; color:#8b949e; cursor:pointer; font-size:0.9rem; padding:10px;">Cancel</button>
@@ -6337,6 +6955,11 @@ function openReportMenu(btn) {
     card.appendChild(content);
     document.body.appendChild(overlay);
     document.body.appendChild(card);
+
+    // Update translations for dynamically created content
+    setTimeout(() => {
+        updateTranslations();
+    }, 10);
 
     // Hide Original Button
     btn.style.opacity = '0';

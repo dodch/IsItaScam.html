@@ -297,7 +297,7 @@
       </button>
       <div id="notification-dropdown" class="notification-dropdown hidden">
         <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border-bottom:1px solid #30363d; background:#161b22; position:sticky; top:0; z-index:10;">
-            <span style="font-weight:bold; color:#f0f6fc; font-size:0.95rem;">Notifications</span>
+            <span style="font-weight:bold; color:#f0f6fc; font-size:0.95rem;" data-translate="notifications">Notifications</span>
             <button onclick="toggleNotifications()" style="background:none; border:none; color:#8b949e; cursor:pointer; padding:4px; display:flex; align-items:center; justify-content:center; border-radius:4px;">
                 <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor;"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
             </button>
@@ -305,11 +305,24 @@
         <div id="notification-list"></div>
       </div>
     </div>
+    <!-- LANGUAGE SELECTOR -->
+    <div class="language-selector">
+      <button class="language-btn" onclick="toggleLanguageDropdown()">
+        <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: currentColor;"><path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>
+        <span id="current-language">English</span>
+        <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor;"><path d="M7 10l5 5 5-5z"/></svg>
+      </button>
+      <div id="language-dropdown" class="language-dropdown hidden">
+        <button onclick="console.log('English clicked'); changeLanguage('en')" class="language-option">English</button>
+        <button onclick="console.log('French clicked'); changeLanguage('fr')" class="language-option">Français</button>
+        <button onclick="console.log('Arabic clicked'); changeLanguage('ar')" class="language-option">العربية</button>
+      </div>
+    </div>
     <a href="#" onclick="showPage('home')" style="display: flex; align-items: center; gap: 6px;">
       <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: currentColor;"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-      Home
+      <span data-translate="nav-home">Home</span>
     </a>
-    <a href="#" id="nav-login" onclick="showPage('login')">Login</a>
+    <a href="#" id="nav-login" onclick="showPage('login')" data-translate="nav-login">Login</a>
   </nav>
 </header>
 
@@ -318,18 +331,18 @@
 ===================== -->
 <section id="home">
   <div class="hero">
-    <h1>Before You Buy, Ask One Question</h1>
-    <h2>Is it a scam?</h2>
+    <h1 data-translate="hero-title">Before You Buy, Ask One Question</h1>
+    <h2 data-translate="hero-subtitle">Is it a scam?</h2>
 
     <div class="search-box">
-      <input type="text" id="search-input" placeholder="Website, username, phone number..." onkeyup="if(event.key === 'Enter') performSearch()">
+      <input type="text" id="search-input" data-translate-placeholder="search-placeholder" placeholder="Website, username, phone number..." onkeyup="if(event.key === 'Enter') performSearch()">
       <button id="clear-search-btn" class="hidden" onclick="clearSearch()">✕</button>
       <button onclick="performSearch()">
         <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: currentColor;"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
       </button>
     </div>
 
-    <p style="margin-top:20px; opacity:0.7;">
+    <p style="margin-top:20px; opacity:0.7;" data-translate="results-disclaimer">
       Results are based on community reports and public data.
     </p>
   </div>
@@ -337,28 +350,28 @@
   <hr class="section-separator">
 
   <!-- SEARCH RESULTS LABEL -->
-  <h2 id="search-results-label" class="hidden" style="text-align: center; margin-bottom: 20px; color: #8b5cf6;">Search Results</h2>
+  <h2 id="search-results-label" class="hidden" style="text-align: center; margin-bottom: 20px; color: #8b5cf6;" data-translate="search-results">Search Results</h2>
 
   <!-- HOME PAGE TABS -->
   <div class="home-tab-selector">
-    <button class="home-tab-btn active" id="home-reports-tab-btn" onclick="switchHomeTab('reports')">Community Reports</button>
-    <button class="home-tab-btn" id="home-ratings-tab-btn" onclick="switchHomeTab('ratings')">Seller Ratings</button>
+    <button class="home-tab-btn active" id="home-reports-tab-btn" onclick="switchHomeTab('reports')" data-translate="community-reports">Community Reports</button>
+    <button class="home-tab-btn" id="home-ratings-tab-btn" onclick="switchHomeTab('ratings')" data-translate="seller-ratings">Seller Ratings</button>
     <div class="tab-indicator" id="home-tab-indicator"></div>
   </div>
 
   <!-- Sort Filter -->
   <div style="max-width: 1000px; margin: 0 auto 15px; padding: 10px 20px; display: flex; justify-content: flex-start; position: sticky; top: 85px; z-index: 900; background: rgba(15, 17, 21, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 12px;">
     <select id="sort-filter" onchange="handleSortChange()" style="background-color: #161b22; border: 1px solid #30363d; color: #eaeaea; padding: 8px 36px 8px 12px; border-radius: 8px; outline: none; cursor: pointer; font-size: 0.9rem; width: auto; margin: 0;">
-      <option value="trending">🔥 Trending</option>
-      <option value="recent">🕒 Most Recent</option>
-      <option value="risk">⚠️ Highest Risk</option>
+      <option value="trending" data-translate="trending">🔥 Trending</option>
+      <option value="recent" data-translate="most-recent">🕒 Most Recent</option>
+      <option value="risk" data-translate="highest-risk">⚠️ Highest Risk</option>
     </select>
   </div>
 
   <!-- Reports Grid -->
   <div id="local-reports-grid" class="report-grid"></div>
   <div id="reports-load-more-container" class="hidden" style="text-align: center; margin-top: 20px; margin-bottom: 40px;">
-    <button onclick="loadMoreReports()" class="visit-btn" style="width: auto; padding: 12px 30px; background: #21262d; border: 1px solid #30363d;">Load More</button>
+    <button onclick="loadMoreReports()" class="visit-btn" style="width: auto; padding: 12px 30px; background: #21262d; border: 1px solid #30363d;" data-translate="load-more">Load More</button>
   </div>
 
   <!-- Ratings Grid -->
@@ -410,25 +423,25 @@
     <div class="tab-container">
       <button class="tab-btn active" onclick="switchTab('rate')" id="tab-rate">
         <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-        Rate Seller
+        <span data-translate="rate-seller">Rate Seller</span>
       </button>
       <button class="tab-btn" onclick="switchTab('scam')" id="tab-scam">
         <svg viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
-        Report Scam
+        <span data-translate="report-scam">Report Scam</span>
       </button>
     </div>
 
     <!-- RATE FORM -->
     <form id="form-rate">
-      <h1>Rate a Seller</h1>
+      <h1 data-translate="rate-seller">Rate a Seller</h1>
       <div class="input-with-prefix">
         <select id="rate-country-select" class="country-prefix hidden"></select>
-        <input type="text" id="rate-link" placeholder="Link / username / phone" required oninput="handleInput('rate-link', 'rate-preview')">
+        <input type="text" id="rate-link" data-translate-placeholder="rate-link-placeholder" placeholder="Link / username / phone" required oninput="handleInput('rate-link', 'rate-preview')">
       </div>
       <div id="rate-preview" class="hidden"></div>
 
       <div class="rating-container">
-        <span class="rating-label">Select Rating</span>
+        <span class="rating-label" data-translate="select-rating">Select Rating</span>
         <div class="rating-wrapper">
           <span class="star" onclick="setRating(1)">★</span>
           <span class="star" onclick="setRating(2)">★</span>
@@ -440,33 +453,33 @@
       <input type="hidden" id="rating-input" value="0">
 
       <div class="form-grid">
-        <textarea id="rate-good" placeholder="What was good? (e.g. Fast delivery)" rows="3"></textarea>
-        <textarea id="rate-bad" placeholder="What was bad? (e.g. Packaging)" rows="3"></textarea>
+        <textarea id="rate-good" data-translate-placeholder="rate-good-placeholder" placeholder="What was good? (e.g. Fast delivery)" rows="3"></textarea>
+        <textarea id="rate-bad" data-translate-placeholder="rate-bad-placeholder" placeholder="What was bad? (e.g. Packaging)" rows="3"></textarea>
       </div>
 
-      <button type="button" onclick="submitRating()" class="submit-btn">Submit Rating</button>
+      <button type="button" onclick="submitRating()" class="submit-btn" data-translate="submit-rating">Submit Rating</button>
     </form>
 
     <!-- SCAM REPORT FORM -->
     <form id="form-scam" class="hidden" onsubmit="event.preventDefault(); submitReport()">
-      <h1>Report a Scam</h1>
-      <p>Help the community stay safe by reporting suspicious activity.</p>
+      <h1 data-translate="report-scam">Report a Scam</h1>
+      <p data-translate="help-community">Help the community stay safe by reporting suspicious activity.</p>
 
       <div class="input-with-prefix">
         <select id="scam-country-select" class="country-prefix hidden"></select>
-        <input type="text" id="scammer-link" placeholder="Link / username / phone" required oninput="handleInput('scammer-link', 'link-preview')">
+        <input type="text" id="scammer-link" data-translate-placeholder="scam-link-placeholder" placeholder="Link / username / phone" required oninput="handleInput('scammer-link', 'link-preview')">
       </div>
       <div id="link-preview" class="hidden"></div>
 
-      <input type="text" id="scammer-name" placeholder="Display Name (e.g. Shop Name)" required>
+      <input type="text" id="scammer-name" data-translate-placeholder="scammer-name-placeholder" placeholder="Display Name (e.g. Shop Name)" required>
 
-      <textarea id="scammer-desc" placeholder="Describe what happened..." rows="4" required></textarea>
+      <textarea id="scammer-desc" data-translate-placeholder="scammer-desc-placeholder" placeholder="Describe what happened..." rows="4" required></textarea>
 
       <div class="file-upload-wrapper">
         <input type="file" id="scammer-pic" accept="image/*" onchange="previewImage(this)" class="hidden-file-input">
         <label for="scammer-pic" class="file-upload-label">
           <svg viewBox="0 0 24 24" style="width: 32px; height: 32px; margin-bottom: 8px; fill: currentColor;"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5-7l-3 3.72L9 13l-3 4h12l-4-5z"/></svg>
-          <span>Upload Proof (Optional)</span>
+          <span data-translate="upload-proof">Upload Proof (Optional)</span>
         </label>
       </div>
 
@@ -474,7 +487,7 @@
         <img id="upload-preview" src="" alt="Preview" style="max-width: 100%; max-height: 200px; border-radius: 8px; border: 1px solid #30363d;">
       </div>
 
-      <button type="submit" class="submit-btn">Submit Report</button>
+      <button type="submit" class="submit-btn" data-translate="submit-report">Submit Report</button>
 
     </form>
   </div>
@@ -551,39 +564,39 @@
     <div id="profile-tabs" class="tab-container hidden" style="margin-bottom: 20px;">
       <button class="tab-btn active" id="profile-tab-btn" onclick="switchProfileTab('profile')">
         <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-        Profile
+        <span data-translate="profile-tab">Profile</span>
       </button>
       <button class="tab-btn" id="activity-tab-btn" onclick="switchProfileTab('activity')">
         <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
-        Activity
+        <span data-translate="activity-tab">Activity</span>
       </button>
     </div>
 
     <div class="auth-container">
-      <h1>Login</h1>
-      <p>Sign in to submit and track reports.</p>
+    <h1 data-translate="login-title">Login</h1>
+      <p data-translate="login-subtitle">Sign in to submit and track reports.</p>
 
       <button class="google-btn" onclick="googleLogin()">
-        Continue with Google
+        <span data-translate="continue-with-google">Continue with Google</span>
       </button>
 
       <small style="opacity:0.6;">
-        Firebase authentication will be added later.
+        <span data-translate="firebase-note">Firebase authentication will be added later.</span>
       </small>
     </div>
 
   <!-- ACTIVITY SECTION (Visible when logged in) -->
   <div id="user-activity-section" class="hidden" style="margin-top: 40px;">
-    <h1 style="text-align: center;">My Activity</h1>
+    <h1 style="text-align: center;" data-translate="my-activity">My Activity</h1>
     
     <div class="home-tab-selector">
       <button class="home-tab-btn active" id="activity-reports-tab-btn" onclick="switchActivityTab('reports')">
         <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
-        <span>My Reports</span>
+        <span data-translate="my-reports">My Reports</span>
       </button>
       <button class="home-tab-btn" id="activity-ratings-tab-btn" onclick="switchActivityTab('ratings')">
         <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-        <span>My Ratings</span>
+        <span data-translate="my-ratings">My Ratings</span>
       </button>
       <div class="tab-indicator" id="activity-tab-indicator"></div>
     </div>
@@ -598,7 +611,7 @@
 <button class="floating-pill-btn" onclick="handleFabClick()">
   <span class="fab-content-report">
     <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
-    <span>Report</span>
+    <span data-translate="report">Report</span>
   </span>
   <span class="fab-content-up">
     <svg viewBox="0 0 24 24"><path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z"/></svg>
@@ -609,7 +622,7 @@
 <div id="undo-toast" class="undo-toast hidden">
   <div class="undo-content">
     <span id="undo-message">Deleting in 3s...</span>
-    <button onclick="cancelDeletion()" class="visit-btn" style="margin:0; padding:6px 16px; font-size:0.85rem; background:#30363d; border:none; color:#58a6ff;">Cancel</button>
+    <button onclick="cancelDeletion()" class="visit-btn" style="margin:0; padding:6px 16px; font-size:0.85rem; background:#30363d; border:none; color:#58a6ff;" data-translate="cancel-deletion">Cancel</button>
   </div>
   <div class="undo-progress-bar"><div id="undo-progress"></div></div>
 </div>
@@ -619,24 +632,24 @@
 ===================== -->
 <div id="fullscreen-menu" class="fullscreen-menu">
   <div class="menu-content">
-    <h1 style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+    <h1 style="display: flex; align-items: center; justify-content: center; gap: 10px;" data-translate="about-us-title">
       <svg viewBox="0 0 24 24" style="width:32px; height:32px; fill:#8b949e;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-      About Us
+      <span data-translate="about-us">About Us</span>
     </h1>
-    <p>IsItAScam is a community-driven platform dedicated to identifying and reporting online scams. Our mission is to create a safer digital environment by sharing real user experiences.</p>
+    <p data-translate="about-desc">IsItAScam is a community-driven platform dedicated to identifying and reporting online scams. Our mission is to create a safer digital environment by sharing real user experiences.</p>
     
     <div class="menu-links">
       <a href="#" onclick="showPage('privacy'); closeMenu()" style="display:inline-flex; align-items:center; gap:8px;">
         <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor;"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
-        Privacy Policy
+        <span data-translate="privacy-policy">Privacy Policy</span>
       </a>
       <a href="#" onclick="showPage('terms'); closeMenu()" style="display:inline-flex; align-items:center; gap:8px;">
         <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor;"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
-        Terms of Service
+        <span data-translate="terms-of-service">Terms of Service</span>
       </a>
       <a href="#" style="display:inline-flex; align-items:center; gap:8px;">
         <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor;"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-        Contact Support
+        <span data-translate="contact-support">Contact Support</span>
       </a>
     </div>
 
@@ -665,7 +678,7 @@
     <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
   </button>
   <div class="legal-content">
-    <h1>Privacy Policy</h1>
+    <h1 data-translate="privacy-policy-title">Privacy Policy</h1>
     <p>Last updated: October 2023</p>
     
     <h2>1. Information We Collect</h2>
@@ -687,7 +700,7 @@
     <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
   </button>
   <div class="legal-content">
-    <h1>Terms of Service</h1>
+    <h1 data-translate="terms-of-service-title">Terms of Service</h1>
     <p>By accessing IsItAScam, you agree to be bound by these terms. These rules are designed to protect the community and ensure the platform remains useful.</p>
     
     <h2>1. User Conduct & Rules</h2>

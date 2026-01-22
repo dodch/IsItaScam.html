@@ -35,7 +35,100 @@ body::after {
   opacity: 0.04;
 }
 
-/* Custom Scrollbar */
+/* LANGUAGE SELECTOR */
+.language-selector {
+  position: relative;
+  display: inline-block;
+}
+
+.language-btn {
+  background: none;
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  min-width: 120px;
+  justify-content: space-between;
+}
+
+.language-btn:hover {
+  background: var(--bg-card);
+  border-color: var(--accent-primary);
+}
+
+.language-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-top: 4px;
+  min-width: 140px;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.language-option {
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--text-main);
+  padding: 12px 16px;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s ease;
+  display: block;
+}
+
+.language-option:hover {
+  background: rgba(139, 92, 246, 0.1);
+  color: var(--accent-primary);
+}
+
+.language-option:first-child {
+  border-radius: 8px 8px 0 0;
+}
+
+.language-option:last-child {
+  border-radius: 0 0 8px 8px;
+}
+
+/* RTL Support - Only change text direction, keep layout identical */
+[dir="rtl"] .language-btn {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .language-dropdown {
+  right: auto;
+  left: 0;
+}
+
+[dir="rtl"] .language-option {
+  text-align: right;
+}
+
+/* Prevent layout shifts during language change - only for translatable elements */
+[data-translate] {
+  transition: opacity 0.2s ease;
+}
+
+/* Only animate specific language selector properties */
+.language-selector * {
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+/* DO NOT change any layout for RTL - keep everything identical */
+
+/* CUSTOM SCROLLBAR */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -205,10 +298,11 @@ button {
   display: flex;
   align-items: center;
   margin-left: auto;
+  gap: 24px; /* Better spacing between nav items */
 }
 
 .navbar nav a {
-  margin-left: 16px;
+  margin-left: 0 !important; /* Reset old margins, use gap on parent */
 }
 
 /* Hamburger Menu */
@@ -2164,17 +2258,40 @@ form:not(.hidden),
   .navbar nav a[onclick*="home"] {
     display: none !important;
   }
+
+  /* Compact Login Button for intermediate screens */
+  .nav-login-btn span {
+    display: none;
+  }
+  .nav-login-btn {
+    padding: 8px;
+    border-radius: 50%;
+  }
 }
 
 /* =====================
    NAVBAR IMPROVEMENTS
 ===================== */
+
+  /* Compact Language Selector */
+  .language-btn {
+    min-width: auto !important;
+    padding: 8px !important;
+    gap: 0 !important;
+    border-color: transparent !important;
+  }
+
+  #current-language,
+  .language-btn svg:nth-of-type(2) {
+    display: none !important;
+  }
+}
+
 .navbar nav {
-  gap: 24px; /* Better spacing between Home and Profile */
+  /* gap is now defined in the general .navbar nav rule */
 }
 
 .navbar nav a {
-  margin-left: 0 !important; /* Reset old margins */
 }
 
 /* Modern Home Button */
@@ -2227,14 +2344,6 @@ form:not(.hidden),
 @media (max-width: 600px) {
   .navbar nav {
     gap: 12px;
-  }
-  /* Compact Login Button */
-  .nav-login-btn span {
-    display: none;
-  }
-  .nav-login-btn {
-    padding: 8px;
-    border-radius: 50%;
   }
 
   /* Compact Beta Label */
