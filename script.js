@@ -40,8 +40,11 @@ const translations = {
     'display-name': 'Display Name (Optional)',
     'ban-reason': 'Reason for ban (e.g. Spamming)',
     'privacy-policy': 'Privacy Policy',
+    'privacy-policy-text': 'Last updated: October 2023<br><br><strong>1. Information We Collect</strong><br>We collect information you provide directly to us, such as when you submit a report, rate a seller, or log in via Google. This includes your display name, email address (used for authentication and account management), and the content of your reports.<br><br><strong>2. How We Use Your Information</strong><br>We use this information to operate and maintain IsItAScam, display community reports to other users, and prevent abuse of our platform. We do not sell your personal data to third parties.<br><br><strong>3. Public Content</strong><br>Any reports, ratings, or comments you submit are public. Please do not include your own private sensitive information (like your home address or phone number) in the body of your reports.',
     'terms-of-service': 'Terms of Service',
+    'terms-of-service-text': 'By accessing IsItAScam, you agree to be bound by these terms. These rules are designed to protect the community and ensure the platform remains useful.<br><br><strong>1. User Conduct & Rules</strong><br><strong>No Fake Reports:</strong> You must only submit reports based on genuine interactions. Submitting false claims to harm a reputation is strictly prohibited.<br><strong>No Spam:</strong> Do not post repetitive content, advertisements, or promotional links.<br><strong>No Harassment:</strong> Do not use this platform to bully, harass, or threaten individuals.<br><strong>No Doxxing:</strong> Do not post private personal information (like home addresses) of individuals who are not operating as a public business.<br><br><strong>2. Content Disclaimer</strong><br>All content is user-generated. IsItAScam does not verify the accuracy of reports and is not liable for any damages resulting from the use of this information. Users are responsible for their own submissions.<br><br><strong>3. Termination</strong><br>We reserve the right to ban users and delete content that violates these terms at our sole discretion.<br><br><strong>4. Liability</strong><br>IsItAScam is provided "as is" without any warranties. We are not responsible for any disputes between users and sellers.<br><br>© 2025 IsItAScam',
     'contact-support': 'Contact Support',
+    'contact-support-text': 'Need help? Email us at support@isitascam.com.',
     'about-us': 'About Us',
     'about-desc': 'IsItAScam is a community-driven platform dedicated to identifying and reporting online scams. Our mission is to create a safer digital environment by sharing real user experiences.',
     'about-us-title': 'About Us',
@@ -163,8 +166,11 @@ const translations = {
     'display-name': 'Nom d\'affichage (facultatif)',
     'ban-reason': 'Raison du bannissement (ex: Spam)',
     'privacy-policy': 'Politique de confidentialité',
+    'privacy-policy-text': 'Dernière mise à jour : Octobre 2023<br><br><strong>1. Informations que nous collectons</strong><br>Nous collectons les informations que vous nous fournissez directement, comme lorsque vous soumettez un rapport, évaluez un vendeur ou vous connectez via Google. Cela inclut votre nom d\'affichage, votre adresse e-mail (utilisée pour l\'authentification et la gestion du compte) et le contenu de vos rapports.<br><br><strong>2. Comment nous utilisons vos informations</strong><br>Nous utilisons ces informations pour exploiter et maintenir IsItAScam, afficher les rapports de la communauté aux autres utilisateurs et prévenir les abus sur notre plateforme. Nous ne vendons pas vos données personnelles à des tiers.<br><br><strong>3. Contenu public</strong><br>Tous les rapports, évaluations ou commentaires que vous soumettez sont publics. Veuillez ne pas inclure vos propres informations sensibles privées (comme votre adresse personnelle ou votre numéro de téléphone) dans le corps de vos rapports.',
     'terms-of-service': 'Conditions d\'utilisation',
+    'terms-of-service-text': 'En accédant à IsItAScam, vous acceptez d\'être lié par ces conditions. Ces règles sont conçues pour protéger la communauté et garantir l\'utilité de la plateforme.<br><br><strong>1. Conduite de l\'utilisateur et règles</strong><br><strong>Pas de faux rapports :</strong> Vous ne devez soumettre que des rapports basés sur des interactions réelles. Soumettre de fausses déclarations pour nuire à une réputation est strictement interdit.<br><strong>Pas de spam :</strong> Ne publiez pas de contenu répétitif, de publicités ou de liens promotionnels.<br><strong>Pas de harcèlement :</strong> N\'utilisez pas cette plateforme pour intimider, harceler ou menacer des individus.<br><strong>Pas de doxxing :</strong> Ne publiez pas d\'informations personnelles privées (comme des adresses personnelles) d\'individus qui n\'agissent pas en tant qu\'entreprise publique.<br><br><strong>2. Avis de non-responsabilité sur le contenu</strong><br>Tout le contenu est généré par les utilisateurs. IsItAScam ne vérifie pas l\'exactitude des rapports et n\'est pas responsable des dommages résultant de l\'utilisation de ces informations. Les utilisateurs sont responsables de leurs propres soumissions.<br><br><strong>3. Résiliation</strong><br>Nous nous réservons le droit de bannir des utilisateurs et de supprimer du contenu qui viole ces conditions à notre seule discrétion.<br><br><strong>4. Responsabilité</strong><br>IsItAScam est fourni "tel quel" sans aucune garantie. Nous ne sommes pas responsables des litiges entre utilisateurs et vendeurs.<br><br>© 2025 IsItAScam',
     'contact-support': 'Contacter le support',
+    'contact-support-text': 'Besoin d\'aide ? Écrivez-nous à support@isitascam.com.',
     'about-us': 'À propos de nous',
     'about-desc': 'IsItAScam est une plateforme communautaire dédiée à l\'identification et au signalement des arnaques en ligne. Notre mission est de créer un environnement numérique plus sûr en partageant de véritables expériences utilisateur.',
     'about-us-title': 'À propos de nous',
@@ -286,8 +292,11 @@ const translations = {
     'display-name': 'اسم العرض (اختياري)',
     'ban-reason': 'سبب الحظر (مثال: الرسائل المزعجة)',
     'privacy-policy': 'سياسة الخصوصية',
+    'privacy-policy-text': 'آخر تحديث: أكتوبر 2023<br><br><strong>1. المعلومات التي نجمعها</strong><br>نجمع المعلومات التي تقدمها لنا مباشرة، مثل عند تقديم تقرير، أو تقييم بائع، أو تسجيل الدخول عبر Google. يشمل ذلك اسم العرض وعنوان البريد الإلكتروني (المستخدم للمصادقة وإدارة الحساب) ومحتوى تقاريرك.<br><br><strong>2. كيف نستخدم معلوماتك</strong><br>نستخدم هذه المعلومات لتشغيل وصيانة IsItAScam، وعرض تقارير المجتمع للمستخدمين الآخرين، ومنع إساءة استخدام منصتنا. نحن لا نبيع بياناتك الشخصية لأطراف ثالثة.<br><br><strong>3. المحتوى العام</strong><br>أي تقارير أو تقييمات أو تعليقات ترسلها تكون عامة. يرجى عدم تضمين معلوماتك الحساسة الخاصة (مثل عنوان منزلك أو رقم هاتفك) في نص تقاريرك.',
     'terms-of-service': 'شروط الخدمة',
+    'terms-of-service-text': 'من خلال الوصول إلى IsItAScam، فإنك توافق على الالتزام بهذه الشروط. تم تصميم هذه القواعد لحماية المجتمع وضمان بقاء المنصة مفيدة.<br><br><strong>1. سلوك المستخدم والقواعد</strong><br><strong>لا تقارير مزيفة:</strong> يجب عليك تقديم تقارير تستند فقط إلى تفاعلات حقيقية. يُحظر تمامًا تقديم ادعاءات كاذبة للإضرار بالسمعة.<br><strong>لا للبريد العشوائي:</strong> لا تنشر محتوى متكررًا أو إعلانات أو روابط ترويجية.<br><strong>لا للمضايقات:</strong> لا تستخدم هذه المنصة للتنمر أو المضايقة أو تهديد الأفراد.<br><strong>لا لنشر المعلومات الخاصة (Doxxing):</strong> لا تنشر معلومات شخصية خاصة (مثل عناوين المنزل) لأفراد لا يعملون كنشاط تجاري عام.<br><br><strong>2. إخلاء المسؤولية عن المحتوى</strong><br>كل المحتوى من إنشاء المستخدمين. لا تتحقق IsItAScam من دقة التقارير وليست مسؤولة عن أي أضرار ناتجة عن استخدام هذه المعلومات. المستخدمون مسؤولون عن مشاركاتهم الخاصة.<br><br><strong>3. الإنهاء</strong><br>نحتفظ بالحق في حظر المستخدمين وحذف المحتوى الذي ينتهك هذه الشروط وفقًا لتقديرنا الخاص.<br><br><strong>4. المسؤولية</strong><br>يتم توفير IsItAScam "كما هي" دون أي ضمانات. نحن لسنا مسؤولين عن أي نزاعات بين المستخدمين والبائعين.<br><br>© 2025 IsItAScam',
     'contact-support': 'اتصل بالدعم',
+    'contact-support-text': 'تحتاج مساعدة؟ راسلنا على support@isitascam.com.',
     'about-us': 'من نحن',
     'about-desc': 'IsItAScam هي منصة مجتمعية مخصصة لتحديد والإبلاغ عن عمليات الاحتيال عبر الإنترنت. مهمتنا هي خلق بيئة رقمية أكثر أماناً من خلال مشاركة تجارب المستخدمين الحقيقية.',
     'about-us-title': 'من نحن',
@@ -370,101 +379,6 @@ const translations = {
     'stat-ratings': 'تقييمات',
     'view-history': 'عرض السجل الكامل',
     'hide-history': 'إخفاء السجل'
-  },
-  tn: {
-    'nav-home': 'الصفحة الرئيسية',
-    'nav-login': 'دخول',
-    'hero-title': 'قبل ما تشري، سول سؤال وحد',
-    'hero-subtitle': 'واش هي نصابة؟',
-    'search-placeholder': 'الموقع، اسم المستخدم، رقم الهاتف...',
-    'search-results': 'نتايج البحث',
-    'community-reports': 'تقارير المجتمع',
-    'seller-ratings': 'تقييمات البائعين',
-    'trending': '🔥 الشائع',
-    'most-recent': '🕒 الجدد',
-    'highest-risk': '⚠️ أكبر خطر',
-    'load-more': 'حمل أكثر',
-    'notifications': 'الإشعارات',
-    'rate-seller': 'قيم البائع',
-    'report-scam': 'بلغ عن نصابة',
-    'submit-rating': 'بعث التقييم',
-    'submit-report': 'بعث التقرير',
-    'trust-score': 'نقاط الثقة',
-    'paid-no-delivery': 'دفع، ما وصلتش',
-    'user-paid-d17': 'المستخدم دفع ب D17 و تبلغع.',
-    'rate-or-report': 'قيم ولا بلغ',
-    'admin-dashboard': 'لوحة التحكم',
-    'manage-verified': 'تصرف في الأعضاء الموثوقين.',
-    'search-name-uid': 'بحث بالاسم ولا UID...',
-    'add-seller': 'زيد بائع',
-    'verified-users': 'المستخدمين الموثوقين',
-    'banned-users': 'المستخدمين المحظورين',
-    'add-seller-profile': 'زيد ملف بائع ف قاعدة البيانات',
-    'add-seller-desc': 'زيد بائع ما يلزموش تقارير ولا تقييمات. خلي نقاط ثقة أولية.',
-    'manually-verify': 'تحقق من المستخدم يدوياً',
-    'grant-verification': 'منح التحقق',
-    'manually-ban': 'حظر المستخدم يدوياً',
-    'ban-user': 'حظر المستخدم',
-    'user-uid': 'UID المستخدم (ضروري)',
-    'display-name': 'اسم العرض (اختياري)',
-    'ban-reason': 'سبب الحظر (مثال: سبام)',
-    'privacy-policy': 'سياسة الخصوصية',
-    'terms-of-service': 'شروط الخدمة',
-    'contact-support': 'اتصل بالدعم',
-    'about-us': 'عنينا',
-    'about-desc': 'IsItAScam هي منصة مجتمعية مخصصة لتحديد والتبليغ عن النصابات عبر الإنترنت. مهمتنا هي خلق بيئة رقمية أكثر أماناً من خلال مشاركة تجارب المستخدمين الحقيقية.',
-    'my-activity': 'نشاطي',
-    'my-reports': 'تقاريري',
-    'my-ratings': 'تقييماتي',
-    'select-rating': 'اختر التقييم',
-    'help-community': 'ساعد المجتمع يبقى آمن بالتبليغ على الأنشطة المشبوهة.',
-    'rate': 'قيم',
-    'share': 'بارتاجي',
-    'edit': 'بدل',
-    'delete': 'فسخ',
-    'trusted': 'ثيقة',
-    'scam': 'قلبة',
-    'ai-summary-title': 'ملخص IA',
-    'ai-elite': '<strong>نخبة:</strong> البروفيل هذا عندو تقييم طيارة {score}/5.',
-    'ai-trusted': '<strong>بائع ثيقة:</strong> التحليل يوري اللي الناس فرحانة ({score}/5).',
-    'ai-mixed': '<strong>نص نص:</strong> التقييمات مخلطة ({score}/5).',
-    'ai-poor': '<strong>حالة حليلة:</strong> الناس موش عاجبها ({score}/5).',
-    'ai-high-risk': '<strong>خطر كبير:</strong> فما برشا كلام خايب ({score}/5).',
-    'ai-flagged-failures': 'الذكاء الاصطناعي لقى مشاكل كبيرة في <strong>{0}</strong>.',
-    'ai-flagged-failures-2': 'الذكاء الاصطناعي لقى مشاكل كبيرة في <strong>{0}</strong> و <strong>{1}</strong>.',
-    'ai-positive-negligible': 'الكلام الباهي شوية ولا مشكوك فيه.',
-    'ai-complaints-generic': 'فما برشا تشكيات على الخدمة والتوصيل.',
-    'ai-praise': 'المشترين ديما يشكرو في <strong>{0}</strong>.',
-    'ai-praise-2': 'المشترين ديما يشكرو في <strong>{0}</strong> و <strong>{1}</strong>.',
-    'ai-minor-issues': 'أما فما شوية عباد تشكاو من <strong>{0}</strong>.',
-    'ai-no-issues': 'ما فماش مشاكل كبيرة تتعاود.',
-    'ai-mixed-good-bad': 'صحيح <strong>{0}</strong> باهي، أما فما مشاكل في <strong>{1}</strong>.',
-    'ai-mixed-good': '<strong>{0}</strong> حاجة باهية، أما الباقي يختلف.',
-    'ai-mixed-bad': '<strong>{0}</strong> هي المشكلة الكبيرة عند الشراية.',
-    'ai-trend-up': 'طالع 📈.',
-    'ai-trend-down': 'هابط 📉.',
-    'ai-historical': '<strong>⚠ رد بالك:</strong> البروفيل هذا عندو {count} تقارير قديمة، أما توا تحسن.',
-    'report': 'بلغ',
-    'banned': 'مبلكي',
-    'verified-alert': '⚠ رد بالك: أعضاء ثيقة بلغوا على البروفيل هذا.',
-    'verified-endorsement': '✓ جوك باهي: أعضاء ثيقة شكروا البائع هذا.',
-    'welcome': 'مرحباً،',
-    'logged-in-msg': 'راك مكونكتي.',
-    'logout': 'اخرج',
-    'open-admin': 'حل لوحة التحكم',
-    'reports-count-label': 'تقارير',
-    'visit-profile': 'شوف البروفيل ↗',
-    'avg-from-ratings': 'معدل من {count} تقييمات',
-    'status-no-info': 'معلومات ناقصة',
-    'status-trusted': 'خدام ثيقة',
-    'status-low-risk': 'خطر ضعيف',
-    'status-potential-risk': 'ينجم يكون خطر',
-    'status-high-risk': 'خطر كبير',
-    'stat-trust-score': 'نقاط الثقة',
-    'stat-reports': 'تقارير',
-    'stat-ratings': 'تقييمات',
-    'view-history': 'شوف السجل الكامل',
-    'hide-history': 'خبي السجل'
   }
 };
 
@@ -486,8 +400,7 @@ function changeLanguage(lang) {
   const languageNames = {
     'en': 'English',
     'fr': 'Français', 
-    'ar': 'العربية',
-    'tn': 'تونسي'
+    'ar': 'العربية'
   };
   document.getElementById('current-language').textContent = languageNames[lang];
   
@@ -505,7 +418,7 @@ function updateTranslations() {
   document.querySelectorAll('[data-translate]').forEach(element => {
     const key = element.getAttribute('data-translate');
     if (translations[currentLanguage][key]) {
-      element.textContent = translations[currentLanguage][key];
+      element.innerHTML = translations[currentLanguage][key];
     }
   });
   
@@ -568,7 +481,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Add language option listeners manually
   document.querySelectorAll('.language-option').forEach((btn, index) => {
-    const lang = ['en', 'fr', 'ar', 'tn'][index];
+    const lang = ['en', 'fr', 'ar'][index];
     console.log(`Adding listener to ${lang} button`); // Debug log
     btn.addEventListener('click', function(e) {
       console.log(`${lang} button clicked via addEventListener`); // Debug log
@@ -581,7 +494,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, deleteDoc, doc, onSnapshot, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, deleteDoc, doc, onSnapshot, setDoc, getDoc, updateDoc, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
 
 // Your web app's Firebase configuration
@@ -2674,6 +2587,62 @@ const AI_ContentGuard = {
     }
 };
 
+/* RATE LIMIT CHECKER & COUNTER */
+async function getRateLimitUpdate(user) {
+  if (user.uid === ADMIN_UID) return null; // Admins bypass
+
+  const userRef = doc(db, "users", user.uid);
+  const userSnap = await getDoc(userRef);
+  const userData = userSnap.data() || {};
+
+  const now = Date.now();
+  const lastPostTime = userData.lastSubmissionTime ? userData.lastSubmissionTime.toMillis() : 0;
+  
+  // 1. Client-Side Cooldown Check (UX only)
+  if (now - lastPostTime < 60000) {
+      const waitTime = Math.ceil((60000 - (now - lastPostTime)) / 1000);
+      throw new Error(`Please wait ${waitTime} seconds before posting again.`);
+  }
+
+  // 2. Limit Logic (Daily, Weekly, Monthly)
+  const today = new Date().toISOString().split('T')[0]; // "2026-01-23" (Matches Firestore Rules)
+  const oneWeek = 7 * 24 * 60 * 60 * 1000;
+  const oneMonth = 30 * 24 * 60 * 60 * 1000;
+
+  let updateData = {
+      lastSubmissionTime: serverTimestamp(),
+      lastPostDate: today
+  };
+
+  // Daily Logic
+  let dailyCount = userData.dailyCount || 0;
+  if (userData.lastPostDate !== today) dailyCount = 0;
+  if (dailyCount >= 3) throw new Error("Daily limit reached (3 posts/day).");
+  updateData.dailyCount = dailyCount + 1;
+
+  // Weekly Logic
+  let weeklyCount = userData.weeklyCount || 0;
+  const weekStart = userData.weekStart ? userData.weekStart.toMillis() : 0;
+  if (now - weekStart > oneWeek) {
+      weeklyCount = 0;
+      updateData.weekStart = serverTimestamp();
+  }
+  if (weeklyCount >= 10) throw new Error("Weekly limit reached (10 posts/week).");
+  updateData.weeklyCount = weeklyCount + 1;
+
+  // Monthly Logic
+  let monthlyCount = userData.monthlyCount || 0;
+  const monthStart = userData.monthStart ? userData.monthStart.toMillis() : 0;
+  if (now - monthStart > oneMonth) {
+      monthlyCount = 0;
+      updateData.monthStart = serverTimestamp();
+  }
+  if (monthlyCount >= 30) throw new Error("Monthly limit reached (30 posts/month).");
+  updateData.monthlyCount = monthlyCount + 1;
+
+  return updateData;
+}
+
 // Submit Local Report
 async function submitReport() {
   const linkInput = document.getElementById('scammer-link');
@@ -2708,6 +2677,8 @@ async function submitReport() {
       const reason = banSnap.data().reason || "Violation of Terms";
       throw new Error(`You are banned from posting. Reason: ${reason}`);
   }
+
+  // Rate limit check happens during batch preparation below
 
   if (!link || !name || !description) {
     const missing = [];
@@ -2773,8 +2744,23 @@ async function submitReport() {
     // Set main image for feed (prioritize 'Expected' as it's usually the clean product shot, or 'Got' if that's all we have)
     report.image = report.imageExpected || report.imageGot || null;
 
-    // 4. Save to Firebase
-    await addDoc(collection(db, "reports"), report);
+    // 4. Save to Firebase (Batch Write for Security)
+    const batch = writeBatch(db);
+    const newReportRef = doc(collection(db, "reports"));
+    
+    // Get Rate Limit Update Data
+    const userUpdate = await getRateLimitUpdate(user);
+    
+    batch.set(newReportRef, report);
+    
+    // Apply user profile update (Counters + Timestamp)
+    if (userUpdate) {
+        const userRef = doc(db, "users", user.uid);
+        batch.set(userRef, userUpdate, { merge: true });
+    }
+
+    await batch.commit();
+
     showToast("Report submitted successfully!", "success");
     document.getElementById('form-scam').reset();
     
@@ -2798,7 +2784,9 @@ async function submitReport() {
 
   } catch (e) {
     console.error("Submission error: ", e);
-    showToast(e.message || "Error submitting report.", "error");
+    let msg = e.message;
+    if (msg.includes("permission-denied")) msg = "Request blocked: Daily limit reached.";
+    showToast(msg || "Error submitting report.", "error");
   } finally {
     btn.disabled = false;
     btn.classList.remove('loading');
@@ -5518,6 +5506,8 @@ async function submitRating() {
       throw new Error(`You are banned from posting. Reason: ${reason}`);
   }
 
+  // Rate limit check happens during batch preparation below
+
   if (!link || rating == 0) {
     const missing = [];
     if (!link) missing.push(linkInput);
@@ -5571,14 +5561,31 @@ async function submitRating() {
       reporterPhoto: user.photoURL || 'https://via.placeholder.com/150'
     };
 
-    await addDoc(collection(db, "ratings"), review);
+    // Batch Write for Security
+    const batch = writeBatch(db);
+    const newRatingRef = doc(collection(db, "ratings"));
+    
+    // Get Rate Limit Update Data
+    const userUpdate = await getRateLimitUpdate(user);
+
+    batch.set(newRatingRef, review);
+    
+    if (userUpdate) {
+        const userRef = doc(db, "users", user.uid);
+        batch.set(userRef, userUpdate, { merge: true });
+    }
+
+    await batch.commit();
+
     showToast("Rating submitted successfully!", "success");
     document.getElementById('form-rate').reset();
     setRating(0); // Reset stars
     showPage('login', 'activity');
   } catch (e) {
     console.error("Submission error: ", e);
-    showToast(e.message || "Error submitting rating.", "error");
+    let msg = e.message;
+    if (msg.includes("permission-denied")) msg = "Request blocked: Daily limit reached.";
+    showToast(msg || "Error submitting rating.", "error");
   } finally {
     btn.disabled = false;
     btn.classList.remove('loading');
