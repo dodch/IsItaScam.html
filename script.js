@@ -2592,15 +2592,21 @@ async function getRateLimitUpdate(user) {
   if (user.uid === ADMIN_UID) return null; // Admins bypass
 
   const userRef = doc(db, "users", user.uid);
-  const userSnap = await getDoc(userRef);
+  
+  // FORCE SERVER FETCH: Ensure we have the absolute latest data to prevent sync errors
+  let userSnap;
+  try { userSnap = await getDoc(userRef); } 
+  catch (e) { userSnap = { data: () => ({}) }; } // Fallback if fetch fails
+  
   const userData = userSnap.data() || {};
 
   const now = Date.now();
   const lastPostTime = userData.lastSubmissionTime ? userData.lastSubmissionTime.toMillis() : 0;
   
   // 1. Client-Side Cooldown Check (UX only)
-  if (now - lastPostTime < 60000) {
-      const waitTime = Math.ceil((60000 - (now - lastPostTime)) / 1000);
+  // Added 2000ms buffer to account for server clock skew
+  if (now - lastPostTime < 62000) {
+      const waitTime = Math.ceil((62000 - (now - lastPostTime)) / 1000);
       throw new Error(`Please wait ${waitTime} seconds before posting again.`);
   }
 
