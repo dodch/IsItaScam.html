@@ -2605,7 +2605,8 @@ async function getRateLimitUpdate(user) {
   }
 
   // 2. Limit Logic (Daily, Weekly, Monthly)
-  const today = new Date().toISOString().split('T')[0]; // "2026-01-23" (Matches Firestore Rules)
+  // Use UTC date to match Firestore request.time.date()
+  const today = new Date().toISOString().split('T')[0]; 
   const oneWeek = 7 * 24 * 60 * 60 * 1000;
   const oneMonth = 30 * 24 * 60 * 60 * 1000;
 
